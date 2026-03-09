@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     rpc_url: str = "https://api.avax-test.network/ext/bc/C/rpc"
     
     # Agent
-    agent_alias: str = "spv_admin"
-    agent_pass: str = "heathens"
+    agent_alias: str = None
+    agent_pass: str = None
     
     # API Keys
     web3_alchemy_api_key: str | None = None
