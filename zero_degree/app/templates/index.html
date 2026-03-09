@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Zero Degree Marketplace{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ice: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        avax: {
+                            red: '#E84142',
+                            dark: '#1A1A1A',
+                            light: '#F4F4F5'
+                        }
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-strong {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .frost-text {
+            background: linear-gradient(135deg, #ffffff 0%, #bae6fd 50%, #7dd3fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .avax-glow {
+            box-shadow: 0 0 20px rgba(232, 65, 66, 0.3);
+        }
+
+        .avax-glow-hover:hover {
+            box-shadow: 0 0 30px rgba(232, 65, 66, 0.5);
+        }
+
+        .ice-gradient {
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        }
+
+        .shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shimmer::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                left: -100%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+
+        .nav-link {
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #E84142;
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        /* Mobile menu animation */
+        .mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .mobile-menu.open {
+            transform: translateX(0);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #E84142;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="ice-gradient min-h-screen text-slate-200 antialiased selection:bg-avax-red selection:text-white">
+
+    <!-- Wallet Connection Modal -->
+    <div id="walletModal" class="fixed inset-0 z-[100] hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeWalletModal()"></div>
+
+        <!-- Modal -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md p-4 sm:p-6">
+            <div class="glass-card rounded-2xl p-6 relative mx-4 sm:mx-0">
+                <!-- Close button -->
+                <button onclick="closeWalletModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <h3 class="text-xl font-bold text-white mb-2">Connect Wallet</h3>
+                <button onclick="clearSession()" class="text-xs text-slate-500 hover:text-avax-red underline">
+                    Reset Session
+                </button>
+                <p class="text-sm text-slate-400 mb-6">Select your preferred wallet to connect to Zero°</p>
+
+                <div class="space-y-3">
+                    <!-- MetaMask -->
+                    <button onclick="connectWallet('metamask')" id="btnMetaMask"
+                        class="w-full flex items-center justify-between p-4 rounded-xl glass hover:bg-white/5 transition-all group border border-transparent hover:border-avax-red/30">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-[#E17726]/20 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-[#E17726]" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                                </svg>
+                            </div>
+                            <div class="text-left">
+                                <div class="font-semibold text-white group-hover:text-avax-red transition-colors">
+                                    MetaMask</div>
+                                <div class="text-xs text-slate-400">Connect to your MetaMask wallet</div>
+                            </div>
+                        </div>
+                        <svg class="w-5 h-5 text-slate-500 group-hover:text-white" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+
+                    <!-- Core Wallet -->
+                    <button onclick="connectWallet('core')" id="btnCore"
+                        class="w-full flex items-center justify-between p-4 rounded-xl glass hover:bg-white/5 transition-all group border border-transparent hover:border-avax-red/30">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-[#E84142]/20 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-[#E84142]" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                                </svg>
+                            </div>
+                            <div class="text-left">
+                                <div class="font-semibold text-white group-hover:text-avax-red transition-colors">Core
+                                    Wallet</div>
+                                <div class="text-xs text-slate-400">Avalanche's native wallet</div>
+                            </div>
+                        </div>
+                        <svg class="w-5 h-5 text-slate-500 group-hover:text-white" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+
+                    <!-- Coinbase Wallet -->
+                    <button onclick="connectWallet('coinbase')" id="btnCoinbase"
+                        class="w-full flex items-center justify-between p-4 rounded-xl glass hover:bg-white/5 transition-all group border border-transparent hover:border-avax-red/30">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-[#0052FF]/20 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-[#0052FF]" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+                                </svg>
+                            </div>
+                            <div class="text-left">
+                                <div class="font-semibold text-white group-hover:text-avax-red transition-colors">
+                                    Coinbase Wallet</div>
+                                <div class="text-xs text-slate-400">Connect via Coinbase</div>
+                            </div>
+                        </div>
+                        <svg class="w-5 h-5 text-slate-500 group-hover:text-white" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+
+                    <!-- WalletConnect -->
+                    <button onclick="connectWallet('walletconnect')" id="btnWalletConnect"
+                        class="w-full flex items-center justify-between p-4 rounded-xl glass hover:bg-white/5 transition-all group border border-transparent hover:border-avax-red/30">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-lg bg-[#3B99FC]/20 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-[#3B99FC]" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+                                </svg>
+                            </div>
+                            <div class="text-left">
+                                <div class="font-semibold text-white group-hover:text-avax-red transition-colors">
+                                    WalletConnect</div>
+                                <div class="text-xs text-slate-400">Scan with your mobile wallet</div>
+                            </div>
+                        </div>
+                        <svg class="w-5 h-5 text-slate-500 group-hover:text-white" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mt-6 text-center">
+                    <p class="text-xs text-slate-500">
+                        New to crypto? <a href="#" class="text-avax-red hover:underline">Learn how to set up a
+                            wallet</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenuOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden md:hidden" onclick="closeMobileMenu()"></div>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="fixed top-0 right-0 h-full w-64 glass-strong z-50 mobile-menu md:hidden border-l border-white/10">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <span class="text-xl font-bold frost-text">Menu</span>
+                <button onclick="closeMobileMenu()" class="text-slate-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <a href="/merchants" class="block py-2 text-slate-300 hover:text-white transition-colors">Merchants</a>
+                <a href="//localhost:8001/agent" target="_blank" class="block py-2 text-slate-300 hover:text-white transition-colors">SnowGate</a>
+                <a href="#" id="mobileActivityLink" class="block py-2 text-slate-300 hover:text-white transition-colors">Activity</a>
+                
+                <div class="pt-4 border-t border-white/10">
+                    <button id="mobileWalletBtn" onclick="openWalletModal()" class="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg glass hover:bg-white/5 transition-all border border-avax-red/30">
+                        <div class="w-2 h-2 rounded-full bg-avax-red animate-pulse"></div>
+                        <span class="text-sm font-medium text-slate-200">Connect Wallet</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Frost overlay -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-ice-400/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-avax-red/5 rounded-full blur-3xl"></div>
+        <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-ice-500/5 rounded-full blur-3xl">
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-30 glass-strong border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-gradient-to-br from-ice-300 to-avax-red flex items-center justify-center avax-glow">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <span class="text-xl font-bold frost-text tracking-tight">ZERO°</span>
+                </div>
+
+                <!-- Desktop Nav -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="/merchants"
+                        class="nav-link text-sm font-medium text-slate-300 hover:text-white transition-colors">Merchants</a>
+                    <a href="//localhost:8001" target="_blank"
+                        class="nav-link text-sm font-medium text-slate-300 hover:text-white transition-colors">SnowGate</a>
+                    <a href="#" id="activityLink"
+                        class="nav-link text-sm font-medium text-slate-300 hover:text-white transition-colors">Activity</a>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center space-x-4">
+                    <button class="p-2 rounded-lg glass hover:bg-white/5 transition-all group">
+                        <svg class="w-5 h-5 text-slate-400 group-hover:text-avax-red transition-colors" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </button>
+
+                    <!-- Desktop Wallet Button -->
+                    <button id="walletAddress"
+                        class="hidden md:flex items-center space-x-2 px-4 py-2 rounded-lg glass hover:bg-white/5 transition-all border border-avax-red/30 hover:border-avax-red/60 avax-glow-hover">
+                        <div class="w-2 h-2 rounded-full bg-avax-red animate-pulse"></div>
+                        <span class="text-sm font-medium text-slate-200">Connect Wallet</span>
+                    </button>
+
+                    <!-- Mobile menu button -->
+                    <button onclick="openMobileMenu()" class="md:hidden p-2 rounded-lg glass hover:bg-white/5">
+                        <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="relative z-10 pt-20 p-4">
+        {% block content %}{% endblock %}
+    </main>
+
+   <footer class="relative z-10 mt-20 border-t border-white/5 glass-strong">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="space-y-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-6 h-6 rounded bg-gradient-to-br from-ice-300 to-avax-red flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <span class="font-bold frost-text">ZERO°</span>
+                </div>
+                <p class="text-sm text-slate-400">
+                    Autonomous procurement protocols for institutional tail-spend. 
+                    Zero-trust, high-precision RWA settlement.
+                </p>
+            </div>
+
+            <div>
+                <h4 class="font-semibold text-white mb-4">Architecture</h4>
+                <ul class="space-y-2 text-sm text-slate-400">
+                    <li><a href="#" class="hover:text-avax-red transition-colors">Merchant Registry</a></li>
+                    <li><a href="#" class="hover:text-avax-red transition-colors">VendorShops</a></li>
+                    <li><a href="#" class="hover:text-avax-red transition-colors">Settlement Logs</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="font-semibold text-white mb-4">Integrations</h4>
+                <ul class="space-y-2 text-sm text-slate-400">
+                    <li><a href="#" class="hover:text-avax-red transition-colors">SAP Webhooks</a></li>
+                    <li><a href="#" class="hover:text-avax-red transition-colors">SnowGate API</a></li>
+                    <li><a href="#" class="hover:text-avax-red transition-colors">Vyper Boilerplate</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="font-semibold text-white mb-4">Network</h4>
+                <div class="flex space-x-4">
+                    <a href="https://github.com" class="w-8 h-8 rounded-lg glass flex items-center justify-center hover:bg-avax-red/20 transition-colors">
+                        <svg class="w-4 h-4 text-slate-300" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="mt-8 pt-8 border-t border-white/5 text-center text-sm text-slate-500">
+            <p>&copy; 2026 Zero Degree Protocol. Architected for Avalanche.</p>
+        </div>
+    </div>
+</footer>
+
+
+    <!-- Ethers.js + Wallet Logic -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <script>
+        // Configuration
+        const FUJI_NETWORK = {
+            chainId: '0xA869',
+            chainName: 'Avalanche Fuji Testnet',
+            nativeCurrency: { name: 'AVAX', symbol: 'AVAX', decimals: 18 },
+            rpcUrls: ['https://api.avax-test.network/ext/bc/C/rpc'],
+            blockExplorerUrls: ['https://testnet.snowtrace.io/']
+        };
+
+        // State
+        let provider, signer, currentAccount;
+
+        // If server didn't provide wallet, get from JS
+        const serverWallet = "{{ wallet_address or '' }}";
+
+        if (!serverWallet || serverWallet === 'None') {
+            // Fallback to localStorage or window.ethereum
+            const jsWallet = localStorage.getItem('connectedWallet')
+                || (window.ethereum ? window.ethereum.selectedAddress : null);
+            
+            if (jsWallet) {
+                console.log('Found wallet from storage/provider:', jsWallet);
+            }
+        }
+
+        // Mobile Menu Controls
+        function openMobileMenu() {
+            document.getElementById('mobileMenu').classList.add('open');
+            document.getElementById('mobileMenuOverlay').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMobileMenu() {
+            document.getElementById('mobileMenu').classList.remove('open');
+            document.getElementById('mobileMenuOverlay').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        // Modal Controls
+        function openWalletModal() {
+            document.getElementById('walletModal').classList.remove('hidden');
+            detectAvailableWallets();
+            // Close mobile menu if open
+            closeMobileMenu();
+        }
+
+        function closeWalletModal() {
+            document.getElementById('walletModal').classList.add('hidden');
+        }
+
+        // Detect which wallets are available and dim unavailable ones
+        function detectAvailableWallets() {
+            const { ethereum } = window;
+
+            // Check MetaMask
+            const hasMetaMask = ethereum?.isMetaMask || ethereum?.providers?.some(p => p.isMetaMask);
+            const mmBtn = document.getElementById('btnMetaMask');
+            if (mmBtn) mmBtn.style.opacity = hasMetaMask ? '1' : '0.5';
+
+            // Check Core
+            const hasCore = window.core?.ethereum || ethereum?.isCoreWallet || ethereum?.isAvalanche;
+            const coreBtn = document.getElementById('btnCore');
+            if (coreBtn) coreBtn.style.opacity = hasCore ? '1' : '0.5';
+
+            // Coinbase detection
+            const hasCoinbase = ethereum?.isCoinbaseWallet || ethereum?.providers?.some(p => p.isCoinbaseWallet);
+            const cbBtn = document.getElementById('btnCoinbase');
+            if (cbBtn) cbBtn.style.opacity = hasCoinbase ? '1' : '0.5';
+        }
+
+        // Function to update activity link with wallet address
+        function updateActivityLink() {
+            const wallet = currentAccount 
+                || localStorage.getItem('connectedWalletAddress')
+                || (window.ethereum ? window.ethereum.selectedAddress : null);
+
+            // Update desktop link
+            const link = document.getElementById('activityLink');
+            if (link && wallet) {
+                link.href = `/activity/${wallet}`;
+            }
+
+            // Update mobile link
+            const mobileLink = document.getElementById('mobileActivityLink');
+            if (mobileLink && wallet) {
+                mobileLink.href = `/activity/${wallet}`;
+            }
+        }
+
+        // Update both desktop and mobile wallet buttons
+        function updateWalletUI() {
+            const shortAddress = currentAccount ? `${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}` : 'Connect Wallet';
+            
+            // Desktop button
+            const desktopBtn = document.getElementById('walletAddress');
+            if (desktopBtn && currentAccount) {
+                desktopBtn.innerHTML = `<span class="text-sm font-medium text-slate-200">${shortAddress}</span>`;
+                desktopBtn.onclick = disconnectWallet;
+                desktopBtn.classList.add('cursor-pointer');
+            }
+
+            // Mobile button
+            const mobileBtn = document.getElementById('mobileWalletBtn');
+            if (mobileBtn && currentAccount) {
+                mobileBtn.innerHTML = `<span class="text-sm font-medium text-slate-200">${shortAddress}</span>`;
+                mobileBtn.onclick = disconnectWallet;
+                mobileBtn.classList.add('cursor-pointer');
+            }
+
+            // Store the actual address for activity links
+            if (currentAccount) {
+                localStorage.setItem('connectedWalletAddress', currentAccount);
+            }
+        }
+
+        function disconnectWallet() {
+            currentAccount = null;
+            provider = null;
+            signer = null;
+            localStorage.removeItem('connectedWallet');
+            localStorage.removeItem('connectedWalletAddress');
+
+            // Reset desktop button
+            const desktopBtn = document.getElementById('walletAddress');
+            if (desktopBtn) {
+                desktopBtn.innerHTML = `
+                    <div class="w-2 h-2 rounded-full bg-avax-red animate-pulse"></div>
+                    <span class="text-sm font-medium text-slate-200">Connect Wallet</span>
+                `;
+                desktopBtn.onclick = openWalletModal;
+            }
+
+            // Reset mobile button
+            const mobileBtn = document.getElementById('mobileWalletBtn');
+            if (mobileBtn) {
+                mobileBtn.innerHTML = `
+                    <div class="w-2 h-2 rounded-full bg-avax-red animate-pulse"></div>
+                    <span class="text-sm font-medium text-slate-200">Connect Wallet</span>
+                `;
+                mobileBtn.onclick = openWalletModal;
+            }
+
+            updateActivityLink();
+        }
+
+        // Get provider based on type
+        function getProvider(type) {
+            const { ethereum, core, avalanche } = window;
+
+            switch (type) {
+                case 'metamask':
+                    if (ethereum?.providers) {
+                        return ethereum.providers.find(p => p.isMetaMask && !p.isCoreWallet) || ethereum;
+                    }
+                    return ethereum?.isMetaMask ? ethereum : null;
+
+                case 'core':
+                    return core?.ethereum || avalanche || (ethereum?.isCoreWallet ? ethereum : null) ||
+                        (ethereum?.providers?.find(p => p.isCoreWallet || p.isAvalanche));
+
+                case 'coinbase':
+                    if (ethereum?.providers) {
+                        return ethereum.providers.find(p => p.isCoinbaseWallet) || ethereum;
+                    }
+                    return ethereum?.isCoinbaseWallet ? ethereum : null;
+
+                case 'walletconnect':
+                    alert('WalletConnect integration coming soon');
+                    return null;
+
+                default:
+                    return ethereum;
+            }
+        }
+
+        // Main connect function
+        async function connectWallet(type) {
+            const rawProvider = getProvider(type);
+
+            if (!rawProvider) {
+                alert(`${type} not found. Please install the extension.`);
+                return;
+            }
+
+            closeWalletModal();
+
+            try {
+                // Request accounts
+                const accounts = await rawProvider.request({ method: 'eth_requestAccounts' });
+                if (!accounts?.length) throw new Error('No accounts found');
+
+                currentAccount = accounts[0];
+
+                // Setup ethers
+                provider = new ethers.BrowserProvider(rawProvider);
+
+                // Check/switch network
+                const network = await provider.getNetwork();
+                if (network.chainId !== 43113n) {
+                    try {
+                        await rawProvider.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: FUJI_NETWORK.chainId }]
+                        });
+                    } catch (switchErr) {
+                        if (switchErr.code === 4902) {
+                            await rawProvider.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [FUJI_NETWORK]
+                            });
+                        } else {
+                            throw switchErr;
+                        }
+                    }
+                    provider = new ethers.BrowserProvider(rawProvider);
+                }
+
+                signer = await provider.getSigner();
+
+                // Update UI
+                updateWalletUI();
+                updateActivityLink();
+
+                // Store connection type
+                localStorage.setItem('connectedWallet', type);
+
+                console.log(`Connected to ${type}:`, currentAccount);
+
+            } catch (err) {
+                console.error('Connection error:', err);
+                alert('Failed to connect: ' + (err.message || err));
+            }
+        }
+
+        // Auto-reconnect on page load
+        window.addEventListener('load', async () => {
+            const savedWallet = localStorage.getItem('connectedWallet');
+            if (savedWallet) {
+                setTimeout(() => connectWallet(savedWallet), 500);
+            }
+        });
+
+        // Listen for wallet changes
+        window.addEventListener('walletConnected', (e) => {
+            console.log('Wallet event:', e.detail.address);
+            updateActivityLink();
+        });
+
+        // Initialize click handlers
+        document.addEventListener('DOMContentLoaded', () => {
+            const desktopBtn = document.getElementById('walletAddress');
+            const mobileBtn = document.getElementById('mobileWalletBtn');
+            
+            if (desktopBtn) desktopBtn.onclick = openWalletModal;
+            if (mobileBtn) mobileBtn.onclick = openWalletModal;
+            
+            updateActivityLink();
+        });
+        
+        // Clear session function
+        function clearSession() {
+            localStorage.removeItem('connectedWallet');
+            localStorage.removeItem('connectedWalletAddress');
+            currentAccount = null;
+            location.reload();
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

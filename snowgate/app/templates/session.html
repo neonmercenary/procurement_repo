@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SnowGate Session Manager</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
+
+    <style>
+        body {
+            background: #0f172a;
+            color: #e2e8f0
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, .85);
+            backdrop-filter: blur(10px)
+        }
+    </style>
+</head>
+
+<body class="p-6 min-h-screen">
+
+    <div class="max-w-2xl mx-auto space-y-6">
+
+        <!-- HEADER -->
+
+        <div class="glass p-6 rounded-xl border border-slate-700">
+            <h1 class="text-xl font-bold text-white">SnowGate Session Console</h1>
+            <p class="text-xs text-slate-400">Agent purchase relay</p>
+
+            <div id="status" class="mt-2 text-xs text-red-400">
+                Disconnected
+            </div>
+        </div>
+
+
+        <!-- CONNECT -->
+
+        <div class="glass p-6 rounded-xl border border-slate-700">
+            <button onclick="connectWallet()" id="connectBtn"
+                class="w-full bg-blue-600 py-3 rounded-lg hover:bg-blue-500">
+                Connect Wallet
+            </button>
+        </div>
+
+
+        <!-- SESSION CREATION -->
+
+        <div id="sessionBox" class="hidden glass p-6 rounded-xl border border-slate-700">
+
+            <h2 class="text-lg font-semibold text-white mb-4">Create Session</h2>
+
+            <div class="grid grid-cols-2 gap-4">
+
+                <div>
+                    <label class="text-xs text-slate-400">Max Amount (USDC)</label>
+                    <input id="maxAmount" type="number"
+                        class="w-full mt-1 p-2 bg-slate-800 rounded border border-slate-600">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-400">Duration (days)</label>
+                    <input id="duration" type="number"
+                        class="w-full mt-1 p-2 bg-slate-800 rounded border border-slate-600">
+                </div>
+
+            </div>
+
+            <button onclick="createSession()" class="mt-4 w-full bg-emerald-600 py-2 rounded hover:bg-emerald-500">
+                Create Session
+            </button>
+
+        </div>
+
+
+        <!-- USDC APPROVAL -->
+
+        <div id="approveBox" class="hidden glass p-6 rounded-xl border border-slate-700">
+
+            <h2 class="text-lg font-semibold text-white mb-4">Approve USDC</h2>
+
+            <div>
+                <label class="text-xs text-slate-400">Approve Amount</label>
+                <input id="approveAmount" type="number"
+                    class="w-full mt-1 p-2 bg-slate-800 rounded border border-slate-600">
+            </div>
+
+            <button onclick="approveUsdc()" class="mt-4 w-full bg-yellow-600 py-2 rounded hover:bg-yellow-500">
+                Approve
+            </button>
+
+        </div>
+
+
+        <!-- EXECUTE PURCHASE -->
+
+        <div id="purchaseBox" class="hidden glass p-6 rounded-xl border border-slate-700">
+
+            <h2 class="text-lg font-semibold text-white mb-4">Execute Purchase</h2>
+
+            <div class="space-y-3">
+
+                <input id="buyer" placeholder="Buyer Address"
+                    class="w-full p-2 bg-slate-800 border border-slate-600 rounded">
+
+                <input id="shop" placeholder="Shop Address"
+                    class="w-full p-2 bg-slate-800 border border-slate-600 rounded">
+
+                <input id="productId" placeholder="Product ID" type="number"
+                    class="w-full p-2 bg-slate-800 border border-slate-600 rounded">
+
+                <input id="agentId" placeholder="Agent ID" type="number"
+                    class="w-full p-2 bg-slate-800 border border-slate-600 rounded">
+
+                <input id="price" placeholder="Price (USDC)" type="number"
+                    class="w-full p-2 bg-slate-800 border border-slate-600 rounded">
+
+            </div>
+
+            <button onclick="executePurchase()" class="mt-4 w-full bg-purple-600 py-2 rounded hover:bg-purple-500">
+                Execute Purchase
+            </button>
+
+        </div>
+
+
+        <!-- SESSION INFO -->
+
+        <div id="sessionInfo" class="hidden glass p-6 rounded-xl border border-slate-700">
+
+            <h2 class="text-lg font-semibold text-white mb-3">Session Balance</h2>
+
+            <div class="text-sm flex justify-between">
+                <span>Remaining Budget</span>
+                <span id="remaining">-</span>
+            </div>
+
+            <button onclick="refreshSession()" class="mt-3 text-xs text-blue-400">
+                Refresh
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        const SNOWGATE_ADDRESS = "{{ snowgate_address }}"
+        const USDC_ADDRESS = "{{ usdc_address }}"
+
+        const SNOWGATE_ABI = [
+            "function create_session(uint256,uint256)",
+            "function execute_purchase(address,address,uint256,uint256,uint256)",
+            "function balanceOfSession() view returns(uint256)"
+        ]
+
+        const ERC20_ABI = [
+            "function approve(address,uint256)",
+            "function decimals() view returns(uint8)"
+        ]
+
+        let provider
+        let signer
+        let snowgate
+        let usdc
+        let user
+
+        async function connectWallet() {
+
+            provider = new ethers.BrowserProvider(window.ethereum)
+
+            signer = await provider.getSigner()
+
+            user = await signer.getAddress()
+
+            snowgate = new ethers.Contract(SNOWGATE_ADDRESS, SNOWGATE_ABI, signer)
+
+            usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer)
+
+            document.getElementById("status").innerText = "Connected: " + user.slice(0, 6) + "..."
+
+            document.getElementById("connectBtn").disabled = true
+
+            document.getElementById("sessionBox").classList.remove("hidden")
+            document.getElementById("approveBox").classList.remove("hidden")
+            document.getElementById("purchaseBox").classList.remove("hidden")
+            document.getElementById("sessionInfo").classList.remove("hidden")
+
+            refreshSession()
+
+        }
+
+
+        async function createSession() {
+
+            const max = document.getElementById("maxAmount").value
+            const days = document.getElementById("duration").value
+
+            const dec = 6
+
+            const amount = ethers.parseUnits(max, dec)
+
+            const tx = await snowgate.create_session(amount, days)
+
+            await tx.wait()
+
+            alert("Session created")
+
+            refreshSession()
+
+        }
+
+
+        async function approveUsdc() {
+
+            const amount = document.getElementById("approveAmount").value
+
+            const dec = 6
+
+            const parsed = ethers.parseUnits(amount, dec)
+
+            const tx = await usdc.approve(SNOWGATE_ADDRESS, parsed)
+
+            await tx.wait()
+
+            alert("USDC approved")
+
+        }
+
+
+        async function executePurchase() {
+
+            const buyer = document.getElementById("buyer").value
+            const shop = document.getElementById("shop").value
+            const productId = document.getElementById("productId").value
+            const agentId = document.getElementById("agentId").value
+            const price = document.getElementById("price").value
+
+            const dec = 6
+
+            const parsed = ethers.parseUnits(price, dec)
+
+            const tx = await snowgate.execute_purchase(
+                buyer,
+                shop,
+                productId,
+                agentId,
+                parsed
+            )
+
+            await tx.wait()
+
+            alert("Purchase executed")
+
+            refreshSession()
+
+        }
+
+
+        async function refreshSession() {
+
+            try {
+
+                const dec = 6
+
+                const remaining = await snowgate.balanceOfSession()
+
+                document.getElementById("remaining").innerText =
+                    ethers.formatUnits(remaining, dec) + " USDC"
+
+            } catch (e) { }
+
+        }
+
+    </script>
+
+</body>
+
+</html>

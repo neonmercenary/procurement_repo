@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnowGate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
+    <style>
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .skeleton {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .5;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-6">
+    <div class="max-w-2xl mx-auto">
+
+        <!-- Header -->
+        <div class="glass rounded-2xl p-6 mb-6 border border-slate-700">
+            <h1 class="text-2xl font-bold text-white mb-2">❄️ SnowGate</h1>
+            <p class="text-slate-400 text-sm">Agent Purchase Relayer</p>
+            <div id="connectionStatus" class="mt-3 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                <span class="text-xs text-slate-400">Disconnected</span>
+            </div>
+        </div>
+
+        <!-- Connect Section -->
+        <div class="glass rounded-2xl p-6 mb-6 border border-slate-700">
+            <button id="connectBtn" onclick="connectWallet()"
+                class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition">
+                Connect Wallet
+            </button>
+        </div>
+
+        <!-- Loading State (hidden by default) -->
+        <div id="loadingState" class="hidden glass rounded-2xl p-6 mb-6 border border-slate-700">
+            <div class="flex items-center justify-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <span class="ml-3 text-slate-400">Loading balances...</span>
+            </div>
+        </div>
+
+        <!-- SnowGate Info -->
+        <div id="contractInfo" class="hidden glass rounded-2xl p-6 mb-6 border border-slate-700">
+            <h2 class="text-lg font-semibold mb-4 text-white">Contract Status</h2>
+
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">SnowGate Address</span>
+                    <span id="snowgateAddr" class="font-mono text-slate-300">-</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">USDC Balance</span>
+                    <span id="usdcBalance" class="font-mono text-emerald-400 skeleton">Loading...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Owner</span>
+                    <span id="ownerAddr" class="font-mono text-slate-300">-</span>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-slate-700">
+                <button onclick="depositUsdc()"
+                    class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm transition">
+                    Deposit USDC to SnowGate
+                </button>
+            </div>
+        </div>
+
+        <!-- User Wallet Info -->
+        <div id="userInfo" class="hidden glass rounded-2xl p-6 mb-6 border border-slate-700">
+            <h2 class="text-lg font-semibold mb-4 text-white">Your Wallet</h2>
+
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Your USDC Balance</span>
+                    <span id="userUsdcBalance" class="font-mono text-emerald-400 skeleton">Loading...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">USDC Allowance</span>
+                    <span id="usdcAllowance" class="font-mono text-yellow-400 skeleton">Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Execute Purchase -->
+        <div id="purchaseSection" class="hidden glass rounded-2xl p-6 mb-6 border border-slate-700">
+            <h2 class="text-lg font-semibold mb-4 text-white">Execute Purchase</h2>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Vendor Shop Address</label>
+                    <input id="shopAddr" type="text" placeholder="0x..."
+                        class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-sm focus:border-blue-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Product ID</label>
+                        <input id="productId" type="number" placeholder="1"
+                            class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-sm focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Agent ID</label>
+                        <input id="agentId" type="number" placeholder="123"
+                            class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-sm focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Price (USDC)</label>
+                        <input id="price" type="number" placeholder="10"
+                            class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-sm focus:border-blue-500 outline-none">
+                    </div>
+                </div>
+
+                <button onclick="executePurchase()" id="execBtn"
+                    class="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    Execute Purchase
+                </button>
+            </div>
+        </div>
+
+        <!-- Transaction Log -->
+        <div class="glass rounded-2xl p-6 border border-slate-700">
+            <h2 class="text-lg font-semibold mb-4 text-white">Recent Purchases</h2>
+            <div id="txLog" class="space-y-2 text-xs">
+                <p class="text-slate-500">No transactions yet...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Config - Fill these in
+        const SNOWGATE_ADDRESS = "{{ snowgate_address }}" // Your deployed SnowGate
+        const USDC_ADDRESS = "{{ usdc_address }}"      // USDC on your chain
+
+        // ABIs (minimal)
+        const SNOWGATE_ABI = [
+            "event ProductDelivered(uint256 indexed buyer_id, uint256 indexed merchant_id, bytes32 delivery_hash, string payload)",
+            "function execute_purchase(address shop, uint256 product_id, uint256 buyer_agent_id, uint256 price)",
+            "function owner() view returns (address)",
+            "function usdc() view returns (address)",
+            "event SnowGatePurchase(address shop, uint256 product_id, uint256 buyer_agent_id)"
+        ]
+
+        const ERC20_ABI = [
+            "function balanceOf(address) view returns (uint256)",
+            "function transfer(address, uint256) returns (bool)",
+            "function decimals() view returns (uint8)",
+            "function approve(address, uint256) returns (bool)",
+            "function allowance(address, address) view returns (uint256)"
+        ]
+
+        let provider, signer, snowgate, usdc, userAddress
+
+        async function connectWallet() {
+            if (!window.ethereum) {
+                alert("Install MetaMask")
+                return
+            }
+
+            provider = new ethers.BrowserProvider(window.ethereum)
+            signer = await provider.getSigner()
+            userAddress = await signer.getAddress()
+
+            document.getElementById("connectionStatus").innerHTML = `
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span class="text-xs text-emerald-400">${userAddress.slice(0, 6)}...${userAddress.slice(-4)}</span>
+            `
+            document.getElementById("connectBtn").textContent = "Connected"
+            document.getElementById("connectBtn").disabled = true
+
+            // Show loading, hide others
+            document.getElementById("loadingState").classList.remove("hidden")
+
+            await initContracts()
+        }
+
+        async function initContracts() {
+            try {
+                snowgate = new ethers.Contract(ethers.getAddress(SNOWGATE_ADDRESS), SNOWGATE_ABI, signer)
+                const usdcAddr = await snowgate.usdc()
+                usdc = new ethers.Contract(ethers.getAddress(usdcAddr), ERC20_ABI, signer)
+
+                document.getElementById("snowgateAddr").textContent = SNOWGATE_ADDRESS.slice(0, 8) + "..." + SNOWGATE_ADDRESS.slice(-4)
+
+                const owner = await snowgate.owner()
+                document.getElementById("ownerAddr").textContent = owner.slice(0, 6) + "..." + owner.slice(-4)
+
+                // Load all balances
+                await loadAllBalances()
+
+                // Hide loading, show content
+                document.getElementById("loadingState").classList.add("hidden")
+                document.getElementById("contractInfo").classList.remove("hidden")
+                document.getElementById("userInfo").classList.remove("hidden")
+                document.getElementById("purchaseSection").classList.remove("hidden")
+
+            } catch (e) {
+                console.error(e)
+                alert("Failed to load: " + e.message)
+                document.getElementById("loadingState").classList.add("hidden")
+            }
+        }
+
+        async function loadAllBalances() {
+            const dec = await usdc.decimals()
+
+            // Contract USDC balance
+            const contractBal = await usdc.balanceOf(SNOWGATE_ADDRESS)
+            document.getElementById("usdcBalance").textContent =
+                parseFloat(ethers.formatUnits(contractBal, dec)).toFixed(2) + " USDC"
+            document.getElementById("usdcBalance").classList.remove("skeleton")
+
+            // User USDC balance
+            const userBal = await usdc.balanceOf(userAddress)
+            document.getElementById("userUsdcBalance").textContent =
+                parseFloat(ethers.formatUnits(userBal, dec)).toFixed(2) + " USDC"
+            document.getElementById("userUsdcBalance").classList.remove("skeleton")
+
+            // User allowance for SnowGate
+            const allowance = await usdc.allowance(userAddress, SNOWGATE_ADDRESS)
+            document.getElementById("usdcAllowance").textContent =
+                parseFloat(ethers.formatUnits(allowance, dec)).toFixed(2) + " USDC"
+            document.getElementById("usdcAllowance").classList.remove("skeleton")
+        }
+
+        async function depositUsdc() {
+            const amount = prompt("Amount to deposit (USDC):")
+            if (!amount) return
+
+            const dec = await usdc.decimals()
+            const parsed = ethers.parseUnits(amount, dec)
+
+            try {
+                // Direct transfer to SnowGate (no approve needed for transfer)
+                const tx = await usdc.transfer(ethers.getAddress(SNOWGATE_ADDRESS), parsed)
+                await tx.wait()
+
+                alert("Deposited " + amount + " USDC")
+                await loadAllBalances()
+            } catch (e) {
+                alert("Failed: " + e.message)
+            }
+        }
+
+        async function executePurchase() {
+            const shop = document.getElementById("shopAddr").value
+            const productId = document.getElementById("productId").value
+            const agentId = document.getElementById("agentId").value
+            const price = document.getElementById("price").value
+
+            if (!shop || !productId || !agentId || !price) {
+                alert("Fill all fields")
+                return
+            }
+
+            // Validate shop address
+            let shopAddr
+            try {
+                shopAddr = ethers.getAddress(shop)
+            } catch {
+                alert("Invalid shop address")
+                return
+            }
+
+            const dec = await usdc.decimals()
+            const parsedPrice = ethers.parseUnits(price, dec)
+
+            const btn = document.getElementById("execBtn")
+            btn.disabled = true
+            btn.textContent = "Executing..."
+
+            try {
+                const tx = await snowgate.execute_purchase(shopAddr, productId, agentId, parsedPrice);
+                const receipt = await tx.wait();
+
+                // --- NEW: LOG PARSING LOGIC ---
+                const vendorInterface = new ethers.Interface(VENDOR_SHOP_ABI);
+                let secretKey = "Pending...";
+
+                // Look through logs for the ProductDelivered event
+                receipt.logs.forEach((log) => {
+                    try {
+                        const parsedLog = vendorInterface.parseLog(log);
+                        if (parsedLog.name === "ProductDelivered") {
+                            secretKey = parsedLog.args.payload; // This is your "sk_live..."
+                        }
+                    } catch (e) {
+                        // Log doesn't match this interface, skip it
+                    }
+                });
+
+                // --- UPDATED UI RENDERING ---
+                const div = document.createElement("div");
+                div.className = "p-4 bg-slate-800 rounded-xl border border-emerald-500/30 mb-3 animate-in fade-in slide-in-from-bottom-2";
+                div.innerHTML = `
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Delivery Confirmed</span>
+                    <h3 class="text-white font-medium">Product #${productId}</h3>
+                </div>
+                <span class="text-emerald-400 font-mono text-sm">${price} USDC</span>
+            </div>
+            <div class="bg-slate-900 p-3 rounded-lg border border-slate-700">
+                <label class="text-[10px] text-slate-500 block mb-1 uppercase">Decrypted Payload</label>
+                <code class="text-blue-400 text-xs break-all">${secretKey}</code>
+            </div>
+            <div class="text-[10px] text-slate-600 mt-2 font-mono">TX: ${receipt.hash.slice(0, 30)}...</div>
+        `;
+
+                const logContainer = document.getElementById("txLog");
+                if (logContainer.children[0]?.textContent.includes("No transactions")) {
+                    logContainer.innerHTML = "";
+                }
+                logContainer.prepend(div);
+
+                await loadAllBalances();
+
+            } catch (e) {
+                alert("Failed: " + (e.reason || e.message));
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Execute Purchase";
+            }
+
+        }
+
+        if (window.ethereum?.selectedAddress) {
+            connectWallet()
+        }
+    </script>
+</body>
+
+</html>

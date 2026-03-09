@@ -1,0 +1,29 @@
+name: snowgate
+
+plugins:
+  - name: vyper
+  - name: avalanche
+
+default_ecosystem: avalanche
+
+vyper:
+  version: "0.4.3"
+  enable_decimals: true
+  evm_version: "shanghai"
+
+networks:
+  avalanche:
+    fuji:
+      default_provider: node
+
+node:
+  avalanche:
+    fuji:
+      url: "https://api.avax-test.network/ext/bc/C/rpc"
+      chain_id: 43113
+      explorer: "https://testnet.snowtrace.io"
+
+alchemy:
+  avalanche:
+    fuji:
+      uri: https://avax-fuji.g.alchemy.com/v2/${WEB3_ALCHEMY_API_KEY}

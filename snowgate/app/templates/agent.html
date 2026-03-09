@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Purchase Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
+    <style>
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .log-entry {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-6 flex items-center justify-center">
+
+    <!-- Step 1: Connect Wallet -->
+    <div id="connectStep" class="glass rounded-2xl p-8 border border-slate-700 max-w-md w-full text-center">
+        <h1 class="text-3xl font-bold text-white mb-2">🤖 AI Purchase Portal</h1>
+        <p class="text-slate-400 text-sm mb-8">Connect your wallet to start buying with natural language</p>
+
+        <button id="connectBtn" onclick="connectWallet()"
+            class="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition text-lg">
+            Connect Wallet
+        </button>
+
+        <div id="connectionStatus" class="mt-4 flex items-center justify-center gap-2 text-sm">
+            <span class="w-2 h-2 rounded-full bg-red-500"></span>
+            <span class="text-slate-400">Disconnected</span>
+        </div>
+    </div>
+
+    <!-- Step 2: Approve Spending -->
+    <div id="approveStep" class="hidden glass rounded-2xl p-8 border border-slate-700 max-w-md w-full text-center">
+        <div class="text-4xl mb-4">💰</div>
+        <h2 class="text-2xl font-bold text-white mb-2">Approve USDC Spending</h2>
+        <p class="text-slate-400 text-sm mb-6">
+            Set a spending limit so our AI can purchase on your behalf
+        </p>
+
+        <div class="space-y-4 mb-6 text-left">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Your USDC Balance</label>
+                <div id="usdcBalance" class="font-mono text-emerald-400 text-lg">-</div>
+            </div>
+
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Spending Limit (USDC)</label>
+                <input id="spendLimit" type="number" placeholder="100" value="100"
+                    class="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:border-blue-500 outline-none">
+            </div>
+        </div>
+
+        <button id="approveBtn" onclick="approveSpending()"
+            class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-medium transition">
+            Approve & Continue
+        </button>
+
+        <p class="text-xs text-slate-500 mt-4">
+            You can revoke this anytime in your wallet
+        </p>
+    </div>
+
+    <!-- Step 3: Prompt Interface -->
+    <div id="promptStep" class="hidden glass rounded-2xl p-8 border border-slate-700 max-w-2xl w-full">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-xl font-bold text-white">What do you want to buy?</h2>
+                <p class="text-xs text-slate-400 mt-1">Just type naturally, our AI will handle the rest</p>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-slate-400">Remaining Allowance</div>
+                <div id="remainingAllowance" class="font-mono text-emerald-400">-</div>
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <textarea id="userPrompt" rows="3" placeholder="e.g. I want to buy 5 API keys for my project"
+                class="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:border-blue-500 outline-none resize-none"></textarea>
+
+            <button id="submitBtn" onclick="processPrompt()"
+                class="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-medium transition disabled:opacity-50">
+                Process Request
+            </button>
+        </div>
+
+        <!-- Live Logs (NEW) -->
+        <div id="logContainer"
+            class="mt-6 bg-slate-900 rounded-lg p-4 h-48 overflow-y-auto font-mono text-sm space-y-2 border border-slate-700 hidden">
+        </div>
+
+        <!-- Original Result Box (kept for final JSON) -->
+        <div id="result" class="mt-4 p-4 bg-slate-800 rounded-lg border border-slate-700 hidden">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-slate-400 uppercase tracking-wider">Final Result</span>
+                <span id="statusBadge" class="text-xs px-2 py-1 rounded bg-slate-700 text-slate-300">Processing</span>
+            </div>
+            <pre id="resultContent" class="font-mono text-sm text-slate-300 whitespace-pre-wrap"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Config
+        const SNOWGATE_ADDRESS = "{{ snowgate_address }}"
+        const API_URL = "http://" + window.location.hostname + ":8001/parse-buy"
+        let shop_addy = null;
+
+        const ERC20_ABI = [
+            "function balanceOf(address) view returns (uint256)",
+            "function decimals() view returns (uint8)",
+            "function approve(address, uint256) returns (bool)",
+            "function allowance(address, address) view returns (uint256)"
+        ]
+
+        let provider, signer, usdc, userAddress, currentAllowance = 0n
+
+        async function connectWallet() {
+            if (!window.ethereum) {
+                alert("Install MetaMask")
+                return
+            }
+
+            try {
+                provider = new ethers.BrowserProvider(window.ethereum)
+                signer = await provider.getSigner()
+                userAddress = await signer.getAddress()
+
+                document.getElementById("connectionStatus").innerHTML = `
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span class="text-emerald-400">${userAddress.slice(0, 6)}...${userAddress.slice(-4)}</span>
+                `
+                document.getElementById("connectBtn").textContent = "Connected"
+                document.getElementById("connectBtn").disabled = true
+
+                const snowgate = new ethers.Contract(SNOWGATE_ADDRESS, ["function usdc() view returns (address)"], signer)
+                const usdcAddr = await snowgate.usdc()
+                usdc = new ethers.Contract(usdcAddr, ERC20_ABI, signer)
+
+                const allowance = await usdc.allowance(userAddress, SNOWGATE_ADDRESS)
+                if (allowance > 0n) {
+                    currentAllowance = allowance
+                    showPromptStep()
+                } else {
+                    showApproveStep()
+                }
+
+            } catch (e) {
+                alert("Connection failed: " + e.message)
+            }
+        }
+
+        async function showApproveStep() {
+            const dec = await usdc.decimals()
+            const bal = await usdc.balanceOf(userAddress)
+
+            document.getElementById("usdcBalance").textContent =
+                parseFloat(ethers.formatUnits(bal, dec)).toFixed(2) + " USDC"
+
+            document.getElementById("connectStep").classList.add("hidden")
+            document.getElementById("approveStep").classList.remove("hidden")
+        }
+
+        async function approveSpending() {
+            const limit = document.getElementById("spendLimit").value
+            if (!limit || limit <= 0) {
+                alert("Enter a valid amount")
+                return
+            }
+
+            const dec = await usdc.decimals()
+            const parsed = ethers.parseUnits(limit, dec)
+
+            const btn = document.getElementById("approveBtn")
+            btn.disabled = true
+            btn.textContent = "Approving..."
+
+            try {
+                const tx = await usdc.approve(SNOWGATE_ADDRESS, parsed)
+                await tx.wait()
+
+                currentAllowance = parsed
+                showPromptStep()
+            } catch (e) {
+                alert("Approval failed: " + e.message)
+                btn.disabled = false
+                btn.textContent = "Approve & Continue"
+            }
+        }
+
+        async function showPromptStep() {
+            document.getElementById("connectStep").classList.add("hidden")
+            document.getElementById("approveStep").classList.add("hidden")
+            document.getElementById("promptStep").classList.remove("hidden")
+
+            updateRemainingAllowance()
+        }
+
+        async function updateRemainingAllowance() {
+            const dec = await usdc.decimals()
+            const remaining = await usdc.balanceOf(SNOWGATE_ADDRESS)
+            document.getElementById("remainingAllowance").textContent =
+                parseFloat(ethers.formatUnits(remaining, dec)).toFixed(2) + " USDC"
+        }
+
+        // NEW: Add log to UI
+        function addLog(message, type = 'info') {
+            const container = document.getElementById("logContainer")
+            container.classList.remove("hidden")
+
+            const div = document.createElement("div")
+            const colors = {
+                info: 'text-slate-300',
+                success: 'text-emerald-400',
+                error: 'text-red-400',
+                processing: 'text-yellow-400'
+            }
+            const icons = {
+                info: 'ℹ️',
+                success: '✅',
+                error: '❌',
+                processing: '<span class="spinner inline-block">⏳</span>'
+            }
+
+            div.className = `log-entry ${colors[type]} flex items-start gap-2 text-xs`
+            div.innerHTML = `${icons[type]} <span>${message}</span>`
+
+            container.appendChild(div)
+            container.scrollTop = container.scrollHeight
+        }
+
+        async function monitorPurchase(shopAddr) {
+            try {
+                const res = await fetch('/monitor/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        address: shopAddr,
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Monitoring failed");
+
+                console.log("Monitor started:", data);
+                return data;
+
+            } catch (e) {
+                console.error("Monitor error:", e);
+                alert("Failed to start monitoring: " + e.message);
+                throw e;
+            }
+        }
+
+
+        // MODIFIED: Stream logs from backend
+        async function processPrompt() {
+            const prompt = document.getElementById("userPrompt").value.trim()
+            if (!prompt) return
+
+            const btn = document.getElementById("submitBtn")
+            const resultDiv = document.getElementById("result")
+            const resultContent = document.getElementById("resultContent")
+            const statusBadge = document.getElementById("statusBadge")
+            const logContainer = document.getElementById("logContainer")
+
+            btn.disabled = true
+            btn.textContent = "Processing..."
+            resultDiv.classList.add("hidden")
+            logContainer.innerHTML = ''
+            logContainer.classList.remove("hidden")
+
+            addLog(`📝 Prompt: "${prompt}"`, 'info')
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt, userAddress: userAddress })
+                })
+
+                // Read streaming response
+                const reader = response.body.getReader()
+                const decoder = new TextDecoder()
+                let finalData = null
+
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) break
+
+                    const chunk = decoder.decode(value)
+                    const lines = chunk.split('\n').filter(l => l.trim())
+
+                    for (const line of lines) {
+                        try {
+                            const data = JSON.parse(line)
+                            handleStreamLog(data)
+                            if (data.step === 'complete' || data.step === 'error') {
+                                finalData = data
+                            }
+                        } catch (e) {
+                            // Ignore parse errors
+                        }
+                    }
+                }
+
+                // Show final result in original box
+                if (finalData) {
+                    resultDiv.classList.remove("hidden")
+                    resultContent.textContent = JSON.stringify(finalData, null, 2)
+
+                    if (finalData.step === 'error') {
+                        statusBadge.textContent = "Failed"
+                        statusBadge.className = "text-xs px-2 py-1 rounded bg-red-600 text-white"
+                    } else {
+                        statusBadge.textContent = "Complete"
+                        statusBadge.className = "text-xs px-2 py-1 rounded bg-emerald-600 text-white"
+                    }
+                }
+
+            } catch (e) {
+                addLog(`Error: ${e.message}`, 'error')
+                resultDiv.classList.remove("hidden")
+                resultContent.textContent = "Error: " + e.message
+                statusBadge.textContent = "Failed"
+                statusBadge.className = "text-xs px-2 py-1 rounded bg-red-600 text-white"
+            } finally {
+                btn.disabled = false
+                btn.textContent = "Process Request"
+            }
+        }
+
+        // NEW: Handle streamed logs
+        function handleStreamLog(data) {
+            switch (data.step) {
+                case 'parsing':
+                    addLog('🤖 AI parsing your request...', 'processing')
+                    break
+                case 'parsed':
+                    addLog(`✓ Understood: Buy ${data.amount} ${data.item} (~$${data.quantity})`, 'success')
+                    break
+                case 'searching':
+                    addLog(`🔍 Searching for merchants selling ${data.item}...`, 'processing')
+                    break
+                case 'found':
+                    addLog(`✓ Found ${data.merchants?.length || 0} merchants`, 'success')
+                    data.merchants?.forEach(m => {
+                        addLog(`  • ${m.name}: ${m.price} USDC (${m.rating}⭐)`, 'info')
+                    })
+                    break
+                case 'selecting':
+                    addLog(`🎯 Selecting best merchant...`, 'processing')
+                    monitorPurchase(data.address)
+                    break
+                case 'selected':
+                    addLog(`✓ Selected: Product: ${data.product_id} at ${data.price} USDC`, 'success')
+                    break
+                case 'executing_tx_hash':
+                    addLog(`⛓️ Executing purchase... tx: ${data.tx_hash?.slice(0, 20)}...`, 'processing')
+                    break
+                case 'confirming':
+                    addLog(`⏳ Waiting for confirmation...`, 'processing')
+                    break
+                case 'confirmed':
+                    addLog(`✅ Confirmed! Block #${data.block_number}`, 'success')
+                    addLog(`⛽ Gas used: ${data.gas_used}`, 'info')
+                    break
+                case 'error':
+                    addLog(`❌ Failed: ${data.message}`, 'error')
+                    break
+                case 'complete':
+                    addLog(`🎉 Purchase complete!`, 'success')
+                    break
+            };
+            updateRemainingAllowance();
+        }
+
+        // Kept for compatibility but not used in streaming flow
+        async function executePurchase(data) {
+            alert("Execute: " + JSON.stringify(data))
+            await updateRemainingAllowance()
+        }
+
+        if (window.ethereum?.selectedAddress) {
+            connectWallet()
+        }
+    </script>
+</body>
+
+</html>

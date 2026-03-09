@@ -1,0 +1,1180 @@
+{% extends "index.html" %}
+
+{% block title %}Merchant Dashboard - ZERO°{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto p-4">
+    <!-- Connection Warning -->
+    <div id="connectWarning"
+        class="hidden mb-4 p-4 rounded-lg bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 text-sm">
+        Please connect your wallet first to access the merchant dashboard.
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="glass-card p-4 text-center cursor-pointer hover:bg-white/5 transition" id="agentSelectorCard"
+            onclick="openAgentModal()">
+            <p class="text-xs text-slate-400 uppercase flex items-center justify-center gap-1">
+                Agent Identity
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </p>
+            <p id="displayAgentId" class="text-xl font-bold text-white">#---</p>
+        </div>
+        <div class="glass-card p-4 text-center border-l-4 border-avax-red" id="statusCard">
+            <p class="text-xs text-slate-400 uppercase">Status</p>
+            <p id="displayStatus" class="text-xl font-bold text-white italic">NOT CONNECTED</p>
+        </div>
+        <div class="glass-card p-4 text-center">
+            <p class="text-xs text-slate-400 uppercase">Current Stake</p>
+            <p id="displayStake" class="text-xl font-bold text-white">0.00 USDC</p>
+        </div>
+        <div class="glass-card p-4 text-center">
+            <p class="text-xs text-slate-400 uppercase">Min. Required</p>
+            <p id="displayMinStake" class="text-xl font-bold text-white">---</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column -->
+        <div class="col-span-1 space-y-6">
+            <!-- Registry Contract Input -->
+            <div class="glass-card p-6">
+                <h2 class="text-lg font-semibold mb-4">Contract Setup</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Registry Address</label>
+                        <input id="registryAddress" type="text"
+                            class="w-full p-2 rounded bg-slate-900 border border-slate-700 text-sm font-mono"
+                            placeholder="0x...">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">USDC Address</label>
+                        <input id="usdcAddress" type="text"
+                            class="w-full p-2 rounded bg-slate-900 border border-slate-700 text-sm font-mono"
+                            placeholder="0x...">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">ERC-8004 Address</label>
+                        <input id="erc8004Address" type="text"
+                            class="w-full p-2 rounded bg-slate-900 border border-slate-700 text-sm font-mono"
+                            placeholder="0x...">
+                    </div>
+                    <button id="btnInitContracts" class="w-full py-2 rounded glass hover:bg-white/5 text-sm">Initialize
+                        Contracts</button>
+                </div>
+            </div>
+
+            <!-- Onboarding -->
+            <div class="glass-card p-6">
+                <h2 class="text-lg font-semibold mb-4">1. Registry Onboarding</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">ERC-8004 Agent ID</label>
+                        <input id="merchantAgentId" type="number"
+                            class="w-full p-2 rounded bg-slate-900 border border-slate-700 text-sm"
+                            placeholder="Enter your Global ID">
+                        <button id="btnMirror"
+                            class="mt-3 w-full py-2 rounded bg-white text-black font-bold hover:bg-slate-200 transition">Mirror
+                            Global ID</button>
+                    </div>
+                    <div id="merchantTagsSection" class="hidden space-y-3">
+                        <label class="block text-xs text-slate-400 mb-1">Merchant Tags (max 3)</label>
+                        <input id="tag1" type="text" maxlength="32"
+                            class="w-full p-2 rounded bg-slate-900 border border-slate-700 text-sm"
+                            placeholder="Tag 1 (e.g., electronics)">
+                        <input id="tag2" type="text" maxlength="32"
+                            class="w-full p-2 rounded bg-slate-900 border border-slate-700 text-sm"
+                            placeholder="Tag 2 (optional)">
+                        <input id="tag3" type="text" maxlength="32"
+                            class="w-full p-2 rounded bg-slate-900 border border-slate-700 text-sm"
+                            placeholder="Tag 3 (optional)">
+                        <button id="btnBecomeMerchant" class="w-full py-2 rounded glass hover:bg-white/5 text-sm">Apply
+                            for Merchant
+                            Status</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Staking -->
+            <div class="glass-card p-6">
+                <h2 class="text-lg font-semibold mb-4">2. Economic Stake</h2>
+                <p class="text-xs text-slate-400 mb-4">USDC Stake provides consumer protection and enables "Can Sell"
+                    status.</p>
+                <input id="stakeAmount" type="number"
+                    class="w-full p-2 rounded bg-slate-900 border border-slate-700 text-sm" placeholder="USDC Amount">
+                <div class="grid grid-cols-2 gap-2 mt-3">
+                    <button id="btnApprove" class="py-2 rounded glass text-xs">Approve USDC</button>
+                    <button id="btnDeposit"
+                        class="py-2 rounded avax-glow-hover text-xs font-bold bg-avax-red text-white">Deposit
+                        Stake</button>
+                </div>
+                <button id="btnWithdrawStake" class="w-full mt-2 py-2 rounded glass text-xs text-slate-400 hidden">
+                    Withdraw Stake (Not Available)
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-span-1 lg:col-span-2 space-y-6">
+            <div class="glass-card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold">3. Merchant Inventory</h2>
+                    <div class="flex items-center gap-2">
+                        <span id="merchantTagsDisplay"
+                            class="hidden text-xs px-2 py-1 rounded bg-slate-800 text-slate-300"></span>
+                        <span id="shopStatus" class="text-xs text-slate-500">No Shop Linked</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/50 p-4 rounded-lg">
+                    <div class="space-y-3">
+                        <label class="block text-xs font-medium text-slate-300 italic underline">List Digital
+                            Asset</label>
+                        <input id="prodPrice" type="number" class="w-full p-2 rounded bg-slate-800 text-sm"
+                            placeholder="Price (USDC)">
+                        <input id="prodName" type="text" class="w-full p-2 rounded bg-slate-800 text-sm"
+                            placeholder="Item Name">
+                        <select id="prodType" class="w-full p-2 rounded bg-slate-800 text-sm">
+                            <option value="0">File Download</option>
+                            <option value="1">API Access</option>
+                            <option value="2">Secret Key</option>
+                        </select>
+                        <button id="btnList" class="w-full py-2 rounded bg-avax-red text-white font-bold text-sm">Create
+                            Listing</button>
+                    </div>
+                    <div class="flex flex-col justify-center items-center border-l border-slate-700 pl-4">
+                        <p class="text-xs text-slate-400 text-center mb-2">Merchant Address</p>
+                        <code id="displayShopAddr"
+                            class="text-[10px] bg-black p-2 rounded text-avax-red break-all">Not Deployed</code>
+                        <button id="btnDeployShop" class="mt-4 text-xs underline text-slate-400 hover:text-white">Deploy
+                            New Shop Contract</button>
+                        <a id="btnViewActivity" href="/activity/" target="_blank"
+                            class="mt-2 text-xs underline text-slate-400 hover:text-avax-red transition hidden">
+                            View Activity →
+                        </a>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <h3 class="text-sm font-bold text-white mb-3">Active Listings</h3>
+                    <div id="inventoryList" class="space-y-2">
+                        <p class="text-xs text-slate-500">Connect shop to view inventory...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Agent Selection Modal -->
+<div id="agentModal"
+    class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <div class="p-6 border-b border-slate-700 flex justify-between items-center">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Your ERC-8004 Agents</h3>
+                <p class="text-xs text-slate-400 mt-1">Select an agent to manage its merchant status</p>
+            </div>
+            <button onclick="closeAgentModal()" class="text-slate-400 hover:text-white transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+        </div>
+
+        <div id="agentListContainer" class="flex-1 overflow-y-auto p-6 space-y-3">
+            <div class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-avax-red"></div>
+                <p class="text-sm text-slate-400 mt-2">Loading your agents...</p>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-700 bg-slate-900/50 flex justify-between items-center">
+            <span id="agentCount" class="text-xs text-slate-500">0 agents found</span>
+            <button onclick="refreshAgentList()"
+                class="text-xs text-avax-red hover:text-white transition flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                    </path>
+                </svg>
+                Refresh List
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+    // Updated ABI - note the exact type signature for the array
+    const REGISTRY_ABI = [
+        // State variables
+        "function owner_of(uint256) view returns (address)",
+        "function is_merchant(uint256) view returns (bool)",
+        "function is_banned(uint256) view returns (bool)",
+        "function stake(uint256) view returns (uint256)",
+        "function shop_address(uint256) view returns (address)",
+        "function merchant_tags(uint256, uint256) view returns (string)",
+        "function minimum_stake() view returns (uint256)",
+        "function admin() view returns (address)",
+        "function usdc_token() view returns (address)",
+        "function identity_registry() view returns (address)",
+
+        // Core functions - note the exact array type
+        "function register_agent(uint256 agent_id)",
+        "function register_merchant(uint256 agent_id, string[] tags)",
+        "function update_tags(uint256 agent_id, string[] tags)",
+        "function deposit_stake(uint256 agent_id, uint256 amount)",
+        "function withdraw_stake(uint256 agent_id, uint256 amount)",
+        "function link_shop(uint256 agent_id, address shop_address)",
+
+        // View functions
+        "function can_merchant_sell(uint256 agent_id) view returns (bool)",
+        "function get_tags(uint256 agent_id) view returns (string[])",
+
+        // Admin functions
+        "function set_minimum_stake(uint256 amount)",
+        "function ban_merchant(uint256 agent_id)",
+        "function unban_merchant(uint256 agent_id)",
+        "function slash_merchant(uint256 agent_id, uint256 amount)",
+
+        // Events
+        "event AgentRegistered(uint256 indexed agent_id, address indexed owner)",
+        "event MerchantRegistered(uint256 indexed agent_id, string[] tags)",
+        "event TagsUpdated(uint256 indexed agent_id, string[] tags)",
+        "event StakeDeposited(uint256 indexed agent_id, uint256 amount)",
+        "event StakeWithdrawn(uint256 indexed agent_id, uint256 amount, address indexed recipient)",
+        "event ShopLinked(uint256 indexed agent_id, address indexed shop_address)",
+        "event MinimumStakeUpdated(uint256 old_amount, uint256 new_amount)",
+        "event MerchantBanned(uint256 indexed agent_id)",
+        "event MerchantUnbanned(uint256 indexed agent_id)",
+        "event StakeSlashed(uint256 indexed agent_id, uint256 amount)"
+    ];
+
+
+    const ERC20_ABI = [
+        "function approve(address spender, uint256 amount) returns (bool)",
+        "function balanceOf(address account) view returns (uint256)",
+        "function decimals() view returns (uint8)",
+        "function transferFrom(address sender, address receiver, uint256 amount) returns (bool)"
+    ];
+
+    const ERC8004_ABI = [
+        "function ownerOf(uint256 tokenId) view returns (address)", // Note: camelCase per standard
+        "function balanceOf(address owner) view returns (uint256)",
+        "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
+        "function totalSupply() view returns (uint256)"
+    ];
+
+    const VENDORSHOP_ABI = [
+        "function list_product(uint256 price, string item_name, uint8 delivery_type)",
+        "function products(uint256 id) view returns (uint256 price, string item_name, uint8 delivery_type, bool is_active)",
+        "function get_products(uint256 _start_id, uint256 _count) view returns (tuple(uint256 price, string item_name, uint8 delivery_type, bool is_active)[])",
+        "function get_active_products(uint256 _offset, uint256 _count) view returns (tuple(uint256 price, string item_name, uint8 delivery_type, bool is_active)[], uint256[])",
+        "function get_all_active_ids() view returns (uint256[])",
+        "function get_product_count() view returns (uint256)",
+        "function next_product_id() view returns (uint256)"
+    ];
+
+    // State
+    let registryContract = null;
+    let ERC8004Contract = null;
+    let usdcContract = null;
+    let shopContract = null;
+    let currentShopAddress = null;
+    let activeAgentId = localStorage.getItem('activeAgentId') || null;
+    let isInitialized = false;
+    let userAgents = [];
+    let currentMerchantTags = [];
+
+    // Restore saved addresses on load
+    const savedRegistry = localStorage.getItem('registryAddress');
+    const savedUsdc = localStorage.getItem('usdcAddress');
+    const savedErc8004 = localStorage.getItem('erc8004Address');
+
+    // Check if wallet is connected from base.html
+    function checkConnection() {
+        if (!currentAccount || !signer) {
+            document.getElementById('connectWarning').classList.remove('hidden');
+            document.getElementById('displayStatus').innerText = "NOT CONNECTED";
+            return false;
+        }
+        document.getElementById('connectWarning').classList.add('hidden');
+        return true;
+    }
+
+    // Restore saved state
+    function restoreUI() {
+        if (savedRegistry) document.getElementById('registryAddress').value = savedRegistry;
+        if (savedUsdc) document.getElementById('usdcAddress').value = savedUsdc;
+        if (savedErc8004) document.getElementById('erc8004Address').value = savedErc8004;
+
+        if (activeAgentId) {
+            document.getElementById('merchantAgentId').value = activeAgentId;
+            document.getElementById('displayAgentId').innerText = `#${activeAgentId}`;
+        }
+    }
+
+    // Modal Functions
+    function openAgentModal() {
+        if (!checkConnection()) {
+            alert("Please connect your wallet first");
+            return;
+        }
+        if (!ERC8004Contract) {
+            alert("Please initialize contracts first");
+            return;
+        }
+        document.getElementById('agentModal').classList.remove('hidden');
+        refreshAgentList();
+    }
+
+    function closeAgentModal() {
+        document.getElementById('agentModal').classList.add('hidden');
+    }
+
+    document.getElementById('agentModal')?.addEventListener('click', function (e) {
+        if (e.target === this) closeAgentModal();
+    });
+
+    async function startWorker(shopAddress) {
+        const response = await fetch('api/merchant/start-worker', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shop_address: shopAddress })
+        });
+        
+        const result = await response.json();
+        console.log('Worker status:', result);
+        return result;
+    }
+
+    async function getAgentsFromAPI(walletAddress) {
+        const apiUrl = `https://api.routescan.io/v2/network/testnet/evm/43113/etherscan/api`;
+        const params = new URLSearchParams({
+            module: 'account',
+            action: 'tokennfttx',
+            address: walletAddress,
+            contractaddress: await ERC8004Contract.getAddress(),
+            page: '1',
+            offset: '100',
+            apikey: 'your-api-key'
+        });
+
+        try {
+            const response = await fetch(`${apiUrl}?${params}`);
+            const data = await response.json();
+
+            const ownedTokens = new Set();
+            const transfers = data.result || [];
+
+            for (const tx of transfers) {
+                if (tx.to.toLowerCase() === walletAddress.toLowerCase()) {
+                    ownedTokens.add(tx.tokenID);
+                }
+                if (tx.from.toLowerCase() === walletAddress.toLowerCase() &&
+                    tx.from !== '0x0000000000000000000000000000000000000000') {
+                    ownedTokens.delete(tx.tokenID);
+                }
+            }
+            return Array.from(ownedTokens);
+        } catch (e) {
+            console.error("API fetch failed, falling back to contract calls", e);
+            return null;
+        }
+    }
+
+    // Fetch all agents owned by connected wallet
+    async function refreshAgentList() {
+        const container = document.getElementById('agentListContainer');
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-avax-red"></div>
+                <p class="text-sm text-slate-400 mt-2">Scanning blockchain for your agents...</p>
+            </div>
+        `;
+
+        try {
+            userAgents = [];
+            let agentIds = [];
+
+            // Try API first, fallback to contract
+            const apiAgents = await getAgentsFromAPI(currentAccount);
+            if (apiAgents) {
+                agentIds = apiAgents.map(id => BigInt(id));
+            } else {
+                // Fallback to contract enumeration
+                const balance = await ERC8004Contract.balanceOf(currentAccount);
+                const count = Number(balance);
+                const promises = [];
+                for (let i = 0; i < count; i++) {
+                    promises.push(ERC8004Contract.tokenOfOwnerByIndex(currentAccount, i));
+                }
+                agentIds = await Promise.all(promises);
+            }
+
+            const count = agentIds.length;
+            document.getElementById('agentCount').innerText = `${count} agent${count !== 1 ? 's' : ''} found`;
+
+            if (count === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-500">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p class="text-sm">No ERC-8004 agents found for this wallet</p>
+                        <p class="text-xs mt-1 opacity-70">Mint an agent token to get started</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const statusPromises = agentIds.map(async (id) => {
+                try {
+                    const [isMerchant, canSell, stakeAmt, isBanned, shopAddr, tags] = await Promise.all([
+                        registryContract.is_merchant(id).catch(() => false),
+                        registryContract.can_merchant_sell(id).catch(() => false),
+                        registryContract.stake(id).catch(() => 0n),
+                        registryContract.is_banned(id).catch(() => false),
+                        registryContract.shop_address(id).catch(() => ethers.ZeroAddress),
+                        registryContract.get_tags(id).catch(() => [])
+                    ]);
+                    return {
+                        id: id.toString(),
+                        isMerchant,
+                        canSell,
+                        stake: stakeAmt,
+                        isBanned,
+                        hasShop: shopAddr && shopAddr !== ethers.ZeroAddress,
+                        tags: tags || []
+                    };
+                } catch (e) {
+                    return {
+                        id: id.toString(),
+                        isMerchant: false,
+                        canSell: false,
+                        stake: 0n,
+                        isBanned: false,
+                        hasShop: false,
+                        tags: []
+                    };
+                }
+            });
+
+            userAgents = await Promise.all(statusPromises);
+
+            userAgents.sort((a, b) => {
+                if (a.canSell && !b.canSell) return -1;
+                if (!a.canSell && b.canSell) return 1;
+                if (a.hasShop && !b.hasShop) return -1;
+                return Number(a.id) - Number(b.id);
+            });
+
+            renderAgentList();
+
+        } catch (error) {
+            console.error("Error fetching agents:", error);
+            container.innerHTML = `
+                <div class="text-center py-8 text-red-400">
+                    <p class="text-sm">Failed to load agents</p>
+                    <p class="text-xs mt-1 opacity-70">${error.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    function renderAgentList() {
+        const container = document.getElementById('agentListContainer');
+
+        if (userAgents.length === 0) {
+            container.innerHTML = `<div class="text-center py-8 text-slate-500"><p class="text-sm">No agents found</p></div>`;
+            return;
+        }
+
+        container.innerHTML = userAgents.map(agent => {
+            let statusColor = 'bg-slate-700';
+            let statusText = 'Agent Only';
+            let statusIcon = '●';
+
+            if (agent.isBanned) {
+                statusColor = 'bg-red-900/50 text-red-400';
+                statusText = 'Banned';
+                statusIcon = '✕';
+            } else if (agent.canSell) {
+                statusColor = 'bg-emerald-900/50 text-emerald-400';
+                statusText = 'Can Sell';
+                statusIcon = '✓';
+            } else if (agent.isMerchant) {
+                statusColor = 'bg-yellow-900/50 text-yellow-400';
+                statusText = 'Needs Stake';
+                statusIcon = '◐';
+            }
+
+            const isSelected = activeAgentId === agent.id;
+            const stakeDisplay = agent.stake > 0n ? ethers.formatUnits(agent.stake, 6) + ' USDC' : 'No stake';
+            const shopIndicator = agent.hasShop ? '<span class="w-2 h-2 bg-blue-400 rounded-full ml-1" title="Has Shop"></span>' : '';
+            const tagsDisplay = agent.tags && agent.tags.length > 0
+                ? `<span class="text-[10px] text-slate-500 mt-1 block">${agent.tags.slice(0, 2).join(', ')}${agent.tags.length > 2 ? '...' : ''}</span>`
+                : '';
+
+            return `
+                <div onclick="selectAgent('${agent.id}')" 
+                     class="group relative p-4 rounded-lg border ${isSelected ? 'border-avax-red bg-avax-red/10' : 'border-slate-700 bg-slate-800/50 hover:bg-slate-800'} 
+                            cursor-pointer transition-all duration-200 hover:scale-[1.02]">
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-lg font-bold text-slate-300">
+                                #${agent.id}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-white flex items-center">
+                                    Agent #${agent.id}
+                                    ${shopIndicator}
+                                </p>
+                                <p class="text-xs text-slate-400 mt-0.5">${stakeDisplay}</p>
+                                ${tagsDisplay}
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                            <span class="px-2 py-1 rounded text-xs font-medium ${statusColor} flex items-center gap-1">
+                                <span>${statusIcon}</span> ${statusText}
+                            </span>
+                            ${isSelected ? '<span class="text-xs text-avax-red font-medium">Active</span>' : ''}
+                        </div>
+                    </div>
+                    ${agent.isMerchant && !agent.canSell && !agent.isBanned ? `
+                        <div class="mt-3 pt-3 border-t border-slate-700/50 flex justify-between items-center">
+                            <span class="text-xs text-yellow-500">Stake required to sell</span>
+                            <button onclick="event.stopPropagation(); quickStake('${agent.id}')" 
+                                    class="text-xs bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400 px-2 py-1 rounded transition">
+                                Quick Stake
+                            </button>
+                        </div>
+                    ` : ''}
+                    ${!agent.hasShop && agent.canSell ? `
+                        <div class="mt-3 pt-3 border-t border-slate-700/50">
+                            <span class="text-xs text-blue-400">Ready to deploy shop</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function selectAgent(agentId) {
+        activeAgentId = agentId;
+        localStorage.setItem('activeAgentId', agentId);
+
+        document.getElementById('merchantAgentId').value = agentId;
+        document.getElementById('displayAgentId').innerText = `#${agentId}`;
+
+        await syncMerchantStatus();
+        await loadShopFromRegistry();
+        await loadMerchantTags();
+
+        closeAgentModal();
+
+        const card = document.getElementById('agentSelectorCard');
+        card.classList.add('ring-2', 'ring-avax-red');
+        setTimeout(() => card.classList.remove('ring-2', 'ring-avax-red'), 500);
+    }
+
+    async function loadMerchantTags() {
+        if (!registryContract || !activeAgentId) {
+            currentMerchantTags = [];
+            updateTagsDisplay();
+            return;
+        }
+
+        try {
+            currentMerchantTags = await registryContract.get_tags(activeAgentId);
+            updateTagsDisplay();
+        } catch (e) {
+            console.error("Failed to load tags:", e);
+            currentMerchantTags = [];
+            updateTagsDisplay();
+        }
+    }
+
+    function updateTagsDisplay() {
+        const display = document.getElementById('merchantTagsDisplay');
+        if (currentMerchantTags && currentMerchantTags.length > 0) {
+            display.innerText = currentMerchantTags.join(' • ');
+            display.classList.remove('hidden');
+        } else {
+            display.classList.add('hidden');
+        }
+    }
+
+    async function loadShopFromRegistry() {
+        if (!registryContract || !activeAgentId) {
+            updateActivityLink(null);
+            return;
+        }
+
+        try {
+            const shopAddr = await registryContract.shop_address(activeAgentId);
+
+            if (shopAddr && shopAddr !== ethers.ZeroAddress) {
+                currentShopAddress = shopAddr;
+                shopContract = new ethers.Contract(shopAddr, VENDORSHOP_ABI, signer);
+                document.getElementById('displayShopAddr').innerText = shopAddr;
+                document.getElementById('shopStatus').innerText = "ACTIVE";
+                localStorage.setItem('shopAddress', shopAddr);
+                updateActivityLink(shopAddr);
+                startWorker(shopAddr);
+                await loadInventory();
+            } else {
+                currentShopAddress = null;
+                shopContract = null;
+                document.getElementById('displayShopAddr').innerText = "Not Linked";
+                document.getElementById('shopStatus').innerText = "NO SHOP";
+                document.getElementById('inventoryList').innerHTML = '<p class="text-xs text-slate-500">No shop linked to this agent. Deploy a shop to list products.</p>';
+                localStorage.removeItem('shopAddress');
+                updateActivityLink(null);
+            }
+        } catch (e) {
+            console.error("Failed to load shop from registry:", e);
+            currentShopAddress = null;
+            shopContract = null;
+            document.getElementById('displayShopAddr').innerText = "Error";
+            document.getElementById('shopStatus').innerText = "ERROR";
+            document.getElementById('inventoryList').innerHTML = '<p class="text-xs text-red-400">Failed to load shop</p>';
+            updateActivityLink(null);
+        }
+    }
+
+    function updateActivityLink(shopAddr) {
+        const link = document.getElementById('btnViewActivity');
+        if (!link) return;
+
+        if (shopAddr) {
+            link.href = `/activity/?wallet=${shopAddr}`;
+            link.classList.remove('hidden');
+            link.innerText = `View Activity →`;
+        } else {
+            link.href = "/activity/";
+            link.classList.add('hidden');
+        }
+    }
+
+    async function quickStake(agentId) {
+        closeAgentModal();
+        document.getElementById('merchantAgentId').value = agentId;
+        activeAgentId = agentId;
+        await syncMerchantStatus();
+        document.getElementById('stakeAmount').focus();
+        document.getElementById('stakeAmount').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function initContracts() {
+        if (!checkConnection()) return;
+
+        const regAddr = document.getElementById('registryAddress').value || "{{ registry_address }}";
+        const usdcAddr = document.getElementById('usdcAddress').value || "{{ usdc_address }}";
+        const erc8004Addr = document.getElementById('erc8004Address').value || "{{ erc8004_address }}";
+
+        if (!regAddr || !usdcAddr || !erc8004Addr) {
+            alert("Please enter all contract addresses");
+            return;
+        }
+
+        try {
+            registryContract = new ethers.Contract(regAddr, REGISTRY_ABI, signer);
+            usdcContract = new ethers.Contract(usdcAddr, ERC20_ABI, signer);
+
+            if (erc8004Addr && !erc8004Addr.includes("erc8004_address")) {
+                ERC8004Contract = new ethers.Contract(erc8004Addr, ERC8004_ABI, signer);
+            }
+
+            localStorage.setItem('registryAddress', regAddr);
+            localStorage.setItem('usdcAddress', usdcAddr);
+            if (erc8004Addr && !erc8004Addr.includes("erc8004_address")) {
+                localStorage.setItem('erc8004Address', erc8004Addr);
+            }
+
+            const minStake = await registryContract.minimum_stake();
+            document.getElementById('displayMinStake').innerText = `${ethers.formatUnits(minStake, 6)} USDC`;
+
+            isInitialized = true;
+            alert("Contracts initialized!");
+
+            if (activeAgentId) {
+                await syncMerchantStatus();
+                await loadShopFromRegistry();
+                await loadMerchantTags();
+            }
+
+        } catch (e) {
+            console.error("Init error:", e);
+            alert("Failed to initialize contracts: " + e.message);
+        }
+    }
+
+    async function mirrorAgent() {
+        if (!checkConnection() || !registryContract) {
+            alert("Connect wallet and initialize contracts first");
+            return;
+        }
+
+        const id = document.getElementById('merchantAgentId').value;
+        if (!id) return alert("Enter an Agent ID");
+
+        try {
+            // Check ownership via ERC-8004 (using standard ownerOf)
+            try {
+                const owner = await ERC8004Contract.ownerOf(id); // Standard ERC721 ownerOf
+                if (owner.toLowerCase() === currentAccount.toLowerCase()) {
+                    // Already owned, check if mirrored
+                    const mirroredOwner = await registryContract.owner_of(id);
+                    if (mirroredOwner.toLowerCase() === currentAccount.toLowerCase()) {
+                        activeAgentId = id;
+                        localStorage.setItem('activeAgentId', id);
+                        document.getElementById('displayAgentId').innerText = `#${id}`;
+                        await syncMerchantStatus();
+                        await loadShopFromRegistry();
+                        await loadMerchantTags();
+                        alert("Agent already mirrored to your address");
+                        return;
+                    }
+                    // Not mirrored yet, proceed with mirror
+                } else {
+                    return alert("This agent ID is owned by someone else");
+                }
+            } catch (e) {
+                // Not registered in ERC-8004 or other error
+                return alert("Invalid Agent ID or not found in ERC-8004 registry");
+            }
+
+            const tx = await registryContract.register_agent(id);
+            await tx.wait();
+
+            activeAgentId = id;
+            localStorage.setItem('activeAgentId', id);
+            document.getElementById('displayAgentId').innerText = `#${id}`;
+            await syncMerchantStatus();
+            await loadShopFromRegistry();
+            await loadMerchantTags();
+
+            alert("Identity Mirrored Successfully!");
+        } catch (e) {
+            alert("Mirroring failed: " + (e.reason || e.message));
+        }
+    }
+
+
+    // Updated becomeMerchant function with proper array handling
+    async function becomeMerchant() {
+        if (!checkConnection() || !registryContract || !activeAgentId) {
+            alert("Mirror agent identity first");
+            return;
+        }
+
+        // Collect tags - filter out empty strings
+        const tags = [];
+        const tag1 = document.getElementById('tag1').value.trim();
+        const tag2 = document.getElementById('tag2').value.trim();
+        const tag3 = document.getElementById('tag3').value.trim();
+
+        if (tag1) tags.push(tag1);
+        if (tag2) tags.push(tag2);
+        if (tag3) tags.push(tag3);
+
+        if (tags.length === 0) {
+            return alert("At least one tag is required");
+        }
+
+        try {
+            console.log("Registering merchant with tags:", tags);
+            console.log("Agent ID:", activeAgentId);
+
+            // Ensure we're passing a proper array
+            const tx = await registryContract.register_merchant(
+                BigInt(activeAgentId),
+                tags  // Pass as simple JS array
+            );
+
+            console.log("Transaction sent:", tx.hash);
+            const receipt = await tx.wait();
+            console.log("Transaction confirmed:", receipt);
+
+            await syncMerchantStatus();
+            await loadMerchantTags();
+            alert("Merchant status granted with tags: " + tags.join(', '));
+        } catch (e) {
+            console.error("Full error:", e);
+            alert("Failed: " + (e.reason || e.message || "Unknown error"));
+        }
+    }
+
+    // Function to update tags for existing merchants
+    async function updateTags() {
+        if (!checkConnection() || !registryContract || !activeAgentId) {
+            alert("Mirror agent identity first");
+            return;
+        }
+
+        // Collect tags - filter out empty strings
+        const tags = [];
+        const tag1 = document.getElementById('tag1').value.trim();
+        const tag2 = document.getElementById('tag2').value.trim();
+        const tag3 = document.getElementById('tag3').value.trim();
+
+        if (tag1) tags.push(tag1);
+        if (tag2) tags.push(tag2);
+        if (tag3) tags.push(tag3);
+
+        if (tags.length === 0) {
+            return alert("At least one tag is required");
+        }
+
+        try {
+            console.log("Updating merchant tags:", tags);
+            console.log("Agent ID:", activeAgentId);
+
+            const tx = await registryContract.update_tags(
+                BigInt(activeAgentId),
+                tags
+            );
+
+            console.log("Transaction sent:", tx.hash);
+            const receipt = await tx.wait();
+            console.log("Transaction confirmed:", receipt);
+
+            await loadMerchantTags();
+            alert("Tags updated successfully: " + tags.join(', '));
+        } catch (e) {
+            console.error("Full error:", e);
+            alert("Failed: " + (e.reason || e.message || "Unknown error"));
+        }
+    }
+
+    // Alternative: Try using interface.encodeFunctionData if direct call fails
+    async function becomeMerchantWithEncode() {
+        if (!checkConnection() || !registryContract || !activeAgentId) {
+            alert("Mirror agent identity first");
+            return;
+        }
+
+        const tags = [];
+        const tag1 = document.getElementById('tag1').value.trim();
+        const tag2 = document.getElementById('tag2').value.trim();
+        const tag3 = document.getElementById('tag3').value.trim();
+
+        if (tag1) tags.push(tag1);
+        if (tag2) tags.push(tag2);
+        if (tag3) tags.push(tag3);
+
+        if (tags.length === 0) {
+            return alert("At least one tag is required");
+        }
+
+        try {
+            // Try encoding manually to debug
+            const data = registryContract.interface.encodeFunctionData("register_merchant", [
+                BigInt(activeAgentId),
+                tags
+            ]);
+            console.log("Encoded data:", data);
+
+            const tx = await signer.sendTransaction({
+                to: await registryContract.getAddress(),
+                data: data
+            });
+
+            await tx.wait();
+            await syncMerchantStatus();
+            await loadMerchantTags();
+            alert("Merchant status granted!");
+        } catch (e) {
+            console.error("Error:", e);
+            alert("Failed: " + (e.reason || e.message));
+        }
+    }
+
+    async function approveUSDC() {
+        if (!checkConnection() || !usdcContract || !registryContract) {
+            alert("Initialize contracts first");
+            return;
+        }
+
+        const amtStr = document.getElementById('stakeAmount').value;
+        if (!amtStr) return alert("Enter amount first");
+
+        try {
+            const decimals = await usdcContract.decimals().catch(() => 6);
+            const amt = ethers.parseUnits(amtStr, decimals);
+            const regAddr = await registryContract.getAddress();
+
+            document.getElementById('displayStatus').innerText = "APPROVING...";
+            const tx = await usdcContract.approve(regAddr, amt);
+            await tx.wait();
+
+            document.getElementById('displayStatus').innerText = "APPROVED";
+            alert("USDC approved for staking");
+        } catch (e) {
+            alert("Approval failed: " + e.message);
+        }
+    }
+
+    async function depositStake() {
+        if (!checkConnection() || !registryContract || !activeAgentId) {
+            alert("Mirror agent and initialize contracts first");
+            return;
+        }
+
+        const amtStr = document.getElementById('stakeAmount').value;
+        if (!amtStr) return alert("Enter stake amount");
+
+        try {
+            const decimals = await usdcContract.decimals().catch(() => 6);
+            const amt = ethers.parseUnits(amtStr, decimals);
+
+            const balance = await usdcContract.balanceOf(currentAccount);
+            if (balance < amt) {
+                alert(`Insufficient USDC. Have: ${ethers.formatUnits(balance, decimals)}`);
+                return;
+            }
+
+            document.getElementById('displayStatus').innerText = "STAKING...";
+            const tx = await registryContract.deposit_stake(activeAgentId, amt);
+            await tx.wait();
+
+            await syncMerchantStatus();
+            alert("Stake deposited!");
+        } catch (e) {
+            alert("Staking failed: " + (e.reason || e.message));
+        }
+    }
+
+    async function deployShop() {
+        if (!checkConnection() || !registryContract || !activeAgentId) {
+            alert("Complete onboarding first");
+            return;
+        }
+
+        try {
+            document.getElementById('shopStatus').innerText = "DEPLOYING...";
+
+            const res = await fetch('api/merchant/deploy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    registry: await registryContract.getAddress(),
+                    payment: await usdcContract.getAddress(),
+                    merchant_id: activeAgentId,
+                    from_: currentAccount
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Deployment failed");
+
+            const shopAddr = data.address;
+
+            document.getElementById('displayShopAddr').innerText = shopAddr;
+            document.getElementById('shopStatus').innerText = "LINKING...";
+
+            const tx = await registryContract.link_shop(activeAgentId, shopAddr);
+            await tx.wait();
+
+            await loadShopFromRegistry();
+
+            alert("Shop deployed and linked!");
+        } catch (e) {
+            document.getElementById('shopStatus').innerText = "ERROR";
+            alert("Deployment failed: " + e.message);
+        }
+    }
+
+    async function listProduct() {
+        if (!shopContract) {
+            alert("Deploy and link shop first");
+            return;
+        }
+
+        const price = document.getElementById('prodPrice').value;
+        const itemName = document.getElementById('prodName').value; // Changed from prodURI
+        const type = document.getElementById('prodType').value;
+
+        if (!price || !itemName) return alert("Fill all fields");
+
+        try {
+            const decimals = await usdcContract.decimals().catch(() => 6);
+            const priceWei = ethers.parseUnits(price, decimals);
+
+            // High-signal log for the Polemarch console
+            console.log(`Listing Item: ${itemName} at ${price} USDC`);
+
+            const tx = await shopContract.list_product(priceWei, itemName, parseInt(type));
+            await tx.wait();
+
+            alert(`Product "${itemName}" listed successfully!`);
+            loadInventory();
+        } catch (e) {
+            console.error("Listing failed:", e);
+            alert("Listing failed: " + (e.reason || e.message));
+        }
+    }
+
+    async function loadInventory() {
+        if (!shopContract) return;
+
+        document.getElementById('inventoryList').innerHTML = '<p class="text-xs text-slate-400">Loading...</p>';
+
+        try {
+            const [products, ids] = await shopContract.get_active_products(0, 50);
+
+            const inventoryList = document.getElementById('inventoryList');
+
+            if (products.length === 0) {
+                inventoryList.innerHTML = '<p class="text-xs text-slate-400">No active products</p>';
+                return;
+            }
+
+            const html = products.map((product, index) => {
+                const id = ids[index].toString();
+                const price = ethers.formatUnits(product.price, 6);
+                const type = product.delivery_type === 0 ? 'File' :
+                    product.delivery_type === 1 ? 'API' : 'Secret';
+
+                return `
+                    <div class="product-item border-b border-slate-700 py-3 last:border-0" data-id="${id}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-medium text-white">Product #${id}</p>
+                                <p class="text-xs text-slate-400 mt-1">${type} • ${product.is_active ? 'Active' : 'Inactive'}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-emerald-400">${price} USDC</p>
+                                <button onclick="purchaseProduct(${id})" 
+                                        class="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded transition">
+                                    Buy
+                                </button>
+                            </div>
+                        </div>
+                        ${product.item_name ? `
+                            <p class="text-xs text-slate-500 mt-2 truncate" title="${product.item_name}">
+                                ${product.item_name}
+                            </p>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            inventoryList.innerHTML = html;
+
+        } catch (error) {
+            console.error('Failed to load inventory:', error);
+            document.getElementById('inventoryList').innerHTML =
+                '<p class="text-xs text-red-400">Failed to load inventory</p>';
+        }
+    }
+
+    
+
+    async function syncMerchantStatus() {
+        if (!registryContract || !activeAgentId) {
+            document.getElementById('merchantTagsSection').classList.add('hidden');
+            return;
+        }
+
+        try {
+            const [staked, minStake, canSell, isMerch] = await Promise.all([
+                registryContract.stake(activeAgentId).catch(() => 0n),
+                registryContract.minimum_stake().catch(() => 0n),
+                registryContract.can_merchant_sell(activeAgentId).catch(() => false),
+                registryContract.is_merchant(activeAgentId).catch(() => false)
+            ]);
+
+            document.getElementById('displayStake').innerText = `${ethers.formatUnits(staked, 6)} USDC`;
+            document.getElementById('displayMinStake').innerText = `${ethers.formatUnits(minStake, 6)} USDC`;
+
+            const statusEl = document.getElementById('displayStatus');
+            const tagsSection = document.getElementById('merchantTagsSection');
+            const btnMerchant = document.getElementById('btnBecomeMerchant');
+
+            if (canSell) {
+                statusEl.innerText = "ELIGIBLE TO SELL";
+                statusEl.className = "text-xl font-bold text-green-400";
+                tagsSection.classList.remove('hidden');
+                // Change button to update tags if already merchant
+                btnMerchant.innerText = "Update Tags";
+                btnMerchant.onclick = updateTags;
+
+            } else if (isMerch) {
+                statusEl.innerText = "MERCHANT (NEEDS STAKE)";
+                statusEl.className = "text-xl font-bold text-yellow-500";
+                tagsSection.classList.remove('hidden');
+                btnMerchant.innerText = "Update Tags";
+                btnMerchant.onclick = updateTags;
+            } else {
+                statusEl.innerText = "AGENT ONLY";
+                statusEl.className = "text-xl font-bold text-slate-500";
+                tagsSection.classList.remove('hidden');
+                btnMerchant.innerText = "Apply for Merchant Status";
+                btnMerchant.onclick = becomeMerchant;
+            }
+        } catch (e) {
+            console.error("Sync error:", e);
+            document.getElementById('merchantTagsSection').classList.add('hidden');
+        }
+    }
+
+    function clearSession() {
+        localStorage.removeItem('activeAgentId');
+        localStorage.removeItem('registryAddress');
+        localStorage.removeItem('usdcAddress');
+        localStorage.removeItem('erc8004Address');
+        localStorage.removeItem('shopAddress');
+        activeAgentId = null;
+        isInitialized = false;
+        shopContract = null;
+        currentShopAddress = null;
+        currentMerchantTags = [];
+        updateActivityLink(null);
+        location.reload();
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        restoreUI();
+
+        if (typeof currentAccount !== 'undefined' && currentAccount) {
+            checkConnection();
+        }
+
+        // Set template variables if available
+        const regInput = document.getElementById('registryAddress');
+        const usdcInput = document.getElementById('usdcAddress');
+        const ercInput = document.getElementById('erc8004Address');
+
+        if (regInput && !regInput.value) regInput.value = "{{ registry_address }}";
+        if (usdcInput && !usdcInput.value) usdcInput.value = "{{ usdc_address }}";
+        if (ercInput && !ercInput.value) ercInput.value = "{{ erc8004_address }}";
+
+        document.getElementById('btnInitContracts')?.addEventListener('click', initContracts);
+        document.getElementById('btnMirror')?.addEventListener('click', mirrorAgent);
+        document.getElementById('btnBecomeMerchant')?.addEventListener('click', becomeMerchant);
+        document.getElementById('btnApprove')?.addEventListener('click', approveUSDC);
+        document.getElementById('btnDeposit')?.addEventListener('click', depositStake);
+        document.getElementById('btnDeployShop')?.addEventListener('click', deployShop);
+        document.getElementById('btnList')?.addEventListener('click', listProduct);
+
+        document.getElementById('merchantAgentId')?.addEventListener('change', async (e) => {
+            activeAgentId = e.target.value;
+            localStorage.setItem('activeAgentId', activeAgentId);
+            if (registryContract) {
+                await syncMerchantStatus();
+                await loadShopFromRegistry();
+                await loadMerchantTags();
+            }
+        });
+    });
+</script>
+{% endblock %}

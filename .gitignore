@@ -1,0 +1,39 @@
+# --- Security & Credentials (CRITICAL) ---
+.env
+*.pem
+*.key
+.ssh/
+secrets.json
+
+# --- Python Infrastructure ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+*.db
+
+# --- ApeWorx & Smart Contracts ---
+.ape/
+contracts/.build/
+scripts/.build/
+.pytest_cache/
+# Keep your actual contracts, ignore the verifier/artifacts
+contract_verifier.py
+other_contracts/
+
+# --- Project Specific State ---
+*.db
+*.json_state
+state.json
+deployment.json
+monitor_states/
+.DS_Store
+
+# --- OS Specific ---
+Thumbs.db
+desktop.ini
