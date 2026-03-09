@@ -12,28 +12,32 @@ class Settings(BaseSettings):
     
     # Network
     network_string: str = "avalanche:fuji"
-    rpc_url: str = None
-    routescan_api: str | None = None
+    rpc_url: str = "https://api.avax-test.network/ext/bc/C/rpc"
     
     # Agent
-    agent_alias: str | None = None
-    agent_pass: str | None = None
+    agent_alias: str = "spv_admin"
+    agent_pass: str = "heathens"
     
-    # Contracts
-    mall_addr: str | None = None
-    snowgate_address: str | None = None
-    zero_degree_registry_address: str | None = None
+    # API Keys
+    web3_alchemy_api_key: str | None = None
+    routescan_api: str | None = None
+    
+    # Database
+    database_url: str 
+    
+    # App
+    debug: bool = False
+    secret_key: str 
 
     #Worker
     worker_state_file: str = "state.json"
-    groq_api_key: str | None = None
-    relayer_passphrase: str | None = None
 
     # EVM
     identity_registry_address: str | None = None
-    vendor_shop_address: str | None = "0xe34260c96921ec8F64fE731957e82A9e7a6b612C"
     usdc_address: str | None = None
-    entrypoint: str | None = None   #    ERC-4337 EntryPoint
+    zero_degree_registry_address: str | None = None
+    snowgate_address: str | None = None
+    entrypoint: str | None = None
 
 
 @lru_cache()

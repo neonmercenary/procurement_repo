@@ -1,11 +1,9 @@
 # app/routes/merchants.py
 from fastapi import APIRouter, Request, Depends, BackgroundTasks, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
 import json, os, asyncio
-from app.db import get_db
 from app.settings import settings
 from web3 import Web3
 from pydantic import BaseModel, Field
