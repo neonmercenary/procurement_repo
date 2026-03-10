@@ -55,11 +55,15 @@ Unlike standard Web3 wallets, SnowGate acts as a **State-Aware Vault**. It doesn
 
 ### **Setup**
 
+
 ```bash
 # Clone the repository
 git clone https://github.com/neonmercenary/procurement_repo
 
+```
 
+#### Run Zero degree
+```bash
 # Launch Zero degree - Terminal 1
 cd zero_degree/
 
@@ -72,7 +76,10 @@ chmod +x ./start_zd.sh
 
 # Deploy Zerodegree.vy
 uv run ape run deploy --network avalanche:fuji
+```
 
+#### Run SnowGate
+```bash
 # Launch SnowGate - Terminal 2
 cd snowgate/
 
@@ -85,6 +92,12 @@ uv run ape run deploy --network avalanche:fuji
 # Make Executable
 chmod +x ./start_sg.sh
 ./start_sg.sh
+
+
+# Simulate the SAP PR request - Parent folder (~/procurement_repo)
+uv sync
+uv run simulate_sap.py
+
 ```
 
 
