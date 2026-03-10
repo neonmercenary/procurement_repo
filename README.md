@@ -92,8 +92,10 @@ uv run ape run deploy --network avalanche:fuji
 # Make Executable
 chmod +x ./start_sg.sh
 ./start_sg.sh
+```
 
-
+#### Run the Mock SAP PR
+```bash
 # Simulate the SAP PR request - Parent folder (~/procurement_repo)
 uv sync
 uv run simulate_sap.py
