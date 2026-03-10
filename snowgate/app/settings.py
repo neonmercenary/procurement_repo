@@ -31,7 +31,7 @@ class Settings(BaseSettings):
 
     # EVM
     identity_registry_address: str | None = None
-    vendor_shop_address: str | None = "0xe34260c96921ec8F64fE731957e82A9e7a6b612C"
+    vendor_shop_address: str | None = ""
     usdc_address: str | None = None
     entrypoint: str | None = None   #    ERC-4337 EntryPoint
 

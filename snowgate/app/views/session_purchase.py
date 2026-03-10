@@ -153,7 +153,7 @@ async def execute_unified_procurement(requester, p_id, v_id, price):
         if needs_session:
             # ✅ Create session with LARGE CAP - this is a "vault spending cap" not per-transaction
             # Use a large buffer (e.g., 10x price or a fixed large amount)
-            new_budget = price * 2  # At least 1000 USDC or 10x price
+            new_budget = price * 1000  # At least 1000 USDC or 10x price
             
             print(f"🔓 Creating/Extending SnowGate Session with budget: {new_budget}")
             

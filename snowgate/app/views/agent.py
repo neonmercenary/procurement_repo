@@ -52,34 +52,16 @@ class PurchaseAction(BaseModel):
     quantity: Optional[int] = 1
 
 
+
+
+
 @router.get("/")
-def root(request: Request):
-    return templates.TemplateResponse("base.html", {
-        "request": request, 
-        "status": "SnowGate API", 
-        "settings.snowgate_address": settings.settings.snowgate_address,
-        "usdc_address": settings.usdc_address,
-        "rpc_url": settings.rpc_url
-    })
-
-
-@router.get("/agent")
 def agent(request: Request):
     return templates.TemplateResponse("agent.html", {
         "request": request, 
-        "settings.snowgate_address": settings.settings.snowgate_address,
+        "snowgate_address": settings.snowgate_address,
         "groq_api_key": settings.groq_api_key
     })
-
-@router.get("/session")
-def session(request: Request):
-    return templates.TemplateResponse("session.html", {
-        "request": request,
-        "settings.snowgate_address": settings.snowgate_address,
-    })
-
-
-
 
 
 DELIVERY_TYPES = {"Secret": 1, "file": 0, "api": 2}

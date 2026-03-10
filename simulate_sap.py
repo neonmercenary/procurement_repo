@@ -71,7 +71,7 @@ def trigger_procurement():
     # Wait for the Uvicorn server to start up
     time.sleep(3) 
     print(f"🛰️ OUTBOUND: Sending PR {SAP_DATA['d']['PurchaseRequisition']} to SnowGate...")
-    
+    print("Data sent (SAP Standard):", SAP_DATA)
     try:
         # 30s timeout to account for Avalanche RPC latency
         response = requests.post(FASTAPI_URL, json=SAP_DATA, timeout=30)

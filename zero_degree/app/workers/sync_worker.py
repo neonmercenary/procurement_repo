@@ -52,7 +52,7 @@ async def agent_fulfillment_worker(shop_address, start_block):
             # 1. RE-SYNC STATE ON EVERY LOOP
             # This ensures that if the worker restarts, it knows exactly where it left off.
             state = load_shop_state(shop_address)
-            last_processed_block = state.get("last_synced_block") or start_block
+            last_processed_block = state.get("last_synced_block") or start_block()
 
             with networks.parse_network_choice(settings.network_string):
                 # 2. GET ACTUAL CHAIN HEAD
@@ -96,10 +96,15 @@ async def agent_fulfillment_worker(shop_address, start_block):
                             continue
 
                         receipt = networks.active_provider.get_receipt(tx['transactionHash'])
+                        # block_timestamp = networks.active_provider.get_block(receipt.block_number).timestamp
                         
                         if receipt.status == 1:
                             for event in receipt.events:
                                 if event.event_name == "OrderCreated":
+                                    # if event.event_arguments.get("expires") < block_timestamp:
+                                    #     print(f"⚠️ Order {order_id} EXPIRED. Initiating SnowGate reversal...")
+                                    #     pass
+
                                     order_id = event.event_arguments.get("order_id")
                                     print(f"📦 NEW ORDER DETECTED: ID {order_id}")
 

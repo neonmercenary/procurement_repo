@@ -232,26 +232,36 @@ async def list_all_states():
 async def delivery_monitoring_worker(shop_address):
     print(f"📦 Delivery Monitor Online: Tracking VendorShop @ {shop_address}")
     
-    # 1. Load existing state or start from contract creation
+    # 1. Load state - persist strictly
     state = load_state(shop_address)
-    if state.get("last_processed_block") == 0:
+    last_processed_block = state.get("last_processed_block", 0)
+
+    if last_processed_block == 0:
         with networks.parse_network_choice(NETWORK):
+            # Fallback to contract creation or a safe recent height
             last_processed_block = Contract(shop_address).created_at_block()
-    else:
-        last_processed_block = state["last_processed_block"]
+            print(f"🏗️ Starting from Contract Creation: {last_processed_block}")
 
     while True:
-        # 2. REQUIRED: Network context for Ape to decode receipts
         with networks.parse_network_choice(NETWORK):
             try:
-                print(f"🔍 Monitoring Shop {shop_address} from block {last_processed_block + 1}")
+                # Get the absolute current height
+                current_chain_height = networks.active_provider.get_block("latest").number
+                
+                # If we are already caught up, just wait
+                if last_processed_block >= current_chain_height:
+                    print(f"💤 Caught up to head ({current_chain_height}). Waiting...")
+                    await asyncio.sleep(10)
+                    continue
+
+                print(f"🔍 Scanning: {last_processed_block + 1} -> {current_chain_height}")
                 
                 params = {
                     "module": "account",
                     "action": "txlist",
                     "address": shop_address,
                     "startblock": str(last_processed_block + 1),
-                    "endblock": "99999999",
+                    "endblock": str(current_chain_height),
                     "sort": "asc",
                     "apikey": "any-string-works"
                 }
@@ -263,44 +273,35 @@ async def delivery_monitoring_worker(shop_address):
                     tx_list = data.get("result", [])
                     for tx in tx_list:
                         tx_hash = tx['hash']
-                        # 3. Use active_provider safely inside the 'with' block
                         receipt = networks.active_provider.get_receipt(tx_hash)
                         
                         if receipt.status == 1:
                             for event in receipt.events:
-                                # Ensure we only care about YOUR event
                                 if event.event_name == "ProductDelivered":
                                     args = event.event_arguments
                                     order_id = args.get("order_id")
                                     payload = args.get("payload")
                                     
                                     print(f"🎯 Delivery Detected: Order {order_id}!")
+                                    # Use await here if you want the logs to stay in order for the video
+                                    await relay_delivery_to_sap(order_id, payload, tx_hash, shop_address)
 
-                                    # Offload to background so we don't stall the monitor
-                                    asyncio.create_task(
-                                        relay_delivery_to_sap(order_id, payload, tx_hash, shop_address)
-                                    )
-
-                        # Update local tracking
+                        # Increment only after successful processing of the tx block
                         last_processed_block = int(tx['blockNumber'])
-                        
-                        # 4. Corrected State Save
-                        state["last_processed_block"] = last_processed_block
-                        state["last_event_time"] = datetime.now().isoformat()
-                        save_state(shop_address, state)
                 
-                else:
-                    # If no new txs, jump to current head to keep it snappy
-                    current_head = networks.active_provider.get_block("latest").number
-                    last_processed_block = current_head
-                    state["last_processed_block"] = last_processed_block
-                    save_state(shop_address, state)
-            
+                # IMPORTANT: Only move to the chain height if we've checked the range
+                # No more 'jumps' that bypass the API's indexed data
+                last_processed_block = current_chain_height
+                
+                # 4. Save State strictly
+                state["last_processed_block"] = last_processed_block
+                state["last_sync"] = datetime.now().isoformat()
+                save_state(shop_address, state)
+                
             except Exception as e:
                 print(f"⚠️ Delivery Worker Error: {e}")
         
-        await asyncio.sleep(15)
-
+        await asyncio.sleep(10) # 10s is perfect for Fuji indexing time
 
 
 async def relay_delivery_to_sap(order_id, payload, tx_hash, shop_address):
