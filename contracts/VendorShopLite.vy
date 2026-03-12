@@ -190,7 +190,7 @@ def list_product(_price: uint256, _item_name: String[64], _type: uint8):
     The item_name should match the SAP/ERP Line Item description.
     """
     assert msg.sender == self.owner, "Only owner"
-    assert staticcall IZeroDegreeRegistry(self.registry).can_merchant_sell(self.merchant_id), "Merchant not eligible"
+    # assert staticcall IZeroDegreeRegistry(self.registry).can_merchant_sell(self.merchant_id), "Merchant not eligible"
     
     p_id: uint256 = self.next_product_id
     

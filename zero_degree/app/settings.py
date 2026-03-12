@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     # Agent
     agent_alias: str = None
     agent_pass: str = None
+
+    # Vendor (Mock Implementation)
+    vendor_alias_ape:  str | None = None
+    vendor_pass_ape:  str | None = None
     
     # API Keys
     web3_alchemy_api_key: str | None = None

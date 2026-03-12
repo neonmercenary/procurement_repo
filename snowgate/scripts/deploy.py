@@ -6,7 +6,7 @@ from pathlib import Path
 from app.helpers import update_env_key
 
 def main():
-    account = accounts.load("spv_admin")
+    account = accounts.load(settings.agent_alias)
     account.set_autosign(True, passphrase=settings.agent_pass)
     
     print(f"\n🔗 Connecting to {settings.network_string}...")

@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Contracts
     mall_addr: str | None = None
     snowgate_address: str | None = None
-    zero_degree_registry_address: str | None = None
+    zero_degree_registry_address: str | None = "0xeB5f3ef568babdf1009b7cf82A7C93F10F979cd6s"
 
     #Worker
     worker_state_file: str = "state.json"

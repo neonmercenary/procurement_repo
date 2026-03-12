@@ -21,6 +21,8 @@ def __init__(_payment_token: address):
     self.usdc = _payment_token
     self.owner = msg.sender
 
+    
+
 @external
 def execute_purchase(
     shop: address,

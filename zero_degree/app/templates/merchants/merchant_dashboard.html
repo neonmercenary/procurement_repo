@@ -34,7 +34,7 @@
             <p class="text-xs text-slate-400 uppercase">Min. Required</p>
             <p id="displayMinStake" class="text-xl font-bold text-white">---</p>
         </div>
-       
+
     </div>
 
     <center class="p-4"> <button onclick="clearSession()" id="clearSession">Clear Session</button></center>
@@ -350,7 +350,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ shop_address: shopAddress })
         });
-        
+
         const result = await response.json();
         console.log('Worker status:', result);
         return result;
@@ -777,6 +777,13 @@
             return;
         }
 
+        const btn = document.getElementById('btnBecomeMerchant');
+        const originalText = btn.innerText;
+
+        // 1. Disable button to prevent the "Double Popup" issue
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
         // Collect tags - filter out empty strings
         const tags = [];
         const tag1 = document.getElementById('tag1').value.trim();
@@ -803,17 +810,24 @@
 
             console.log("Transaction sent:", tx.hash);
             const receipt = await tx.wait();
-            console.log("Transaction confirmed:", receipt);
+            console.log("Transaction confirmed:", receipt); 
+
+            
 
             await syncMerchantStatus();
             await loadMerchantTags();
             alert("Merchant status granted with tags: " + tags.join(', '));
+
         } catch (e) {
-            console.error("Full error:", e);
-            alert("Failed: " + (e.reason || e.message || "Unknown error"));
+            console.error(e);
+            alert("Failed: " + (e.reason || e.message));
+
+        } finally {
+            // 2. Re-enable button
+            btn.disabled = false;
+            btn.innerText = originalText;
         }
     }
-
     // Function to update tags for existing merchants
     async function updateTags() {
         if (!checkConnection() || !registryContract || !activeAgentId) {
@@ -1078,7 +1092,7 @@
         }
     }
 
-    
+
 
     async function syncMerchantStatus() {
         if (!registryContract || !activeAgentId) {
@@ -1162,7 +1176,6 @@
 
         document.getElementById('btnInitContracts')?.addEventListener('click', initContracts);
         document.getElementById('btnMirror')?.addEventListener('click', mirrorAgent);
-        document.getElementById('btnBecomeMerchant')?.addEventListener('click', becomeMerchant);
         document.getElementById('btnApprove')?.addEventListener('click', approveUSDC);
         document.getElementById('btnDeposit')?.addEventListener('click', depositStake);
         document.getElementById('btnDeployShop')?.addEventListener('click', deployShop);

@@ -4,14 +4,12 @@ from pydantic import BaseModel
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
-from groq import Groq
 from ape import accounts, Contract, networks
 from contextlib import asynccontextmanager
 import os
 import json
-import asyncio
 import requests
-import time
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from fastapi.templating import Jinja2Templates
@@ -229,6 +227,8 @@ async def list_all_states():
     return {"states": states}
 
 
+
+
 async def delivery_monitoring_worker(shop_address):
     print(f"📦 Delivery Monitor Online: Tracking VendorShop @ {shop_address}")
     
@@ -302,6 +302,8 @@ async def delivery_monitoring_worker(shop_address):
                 print(f"⚠️ Delivery Worker Error: {e}")
         
         await asyncio.sleep(10) # 10s is perfect for Fuji indexing time
+            
+
 
 
 async def relay_delivery_to_sap(order_id, payload, tx_hash, shop_address):
@@ -343,7 +345,8 @@ async def relay_delivery_to_sap(order_id, payload, tx_hash, shop_address):
         except Exception as fe:
             print(f"🚨 CALLBACK FAILED: Total silence from SAP. {fe}")
 
-            
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "snowgate": SNOWGATE_ADDRESS}

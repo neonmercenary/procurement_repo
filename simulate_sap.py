@@ -27,7 +27,7 @@ SAP_DATA = {
                 "Currency": "USDC",
                 "MaterialGroup": "API_KEY",
                 "CostCenter": "CC_AI_MOG_01",
-                "YY1_AgentID_PRI": "23",
+                "YY1_AgentID_PRI": "24",
                 "YY1_VendorShop_PRI": "0xVendorShopAddress",
                 "YY1_CallbackURL_PRI": CALLBACK_URL 
             }
@@ -74,7 +74,7 @@ def trigger_procurement():
     print("Data sent (SAP Standard):", SAP_DATA)
     try:
         # 30s timeout to account for Avalanche RPC latency
-        response = requests.post(FASTAPI_URL, json=SAP_DATA, timeout=30)
+        response = requests.post(FASTAPI_URL, json=SAP_DATA, timeout=60)
         if response.status_code in [200, 202]:
             print(f"✅ MIDDLEWARE ACCEPTED: {response.json().get('status')}")
             print("⏳ WAITING FOR ON-CHAIN FINALITY (Check this terminal for results)...")

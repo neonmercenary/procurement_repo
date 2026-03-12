@@ -12,8 +12,6 @@ interface ERC20:
     def transferFrom(sender: address, receiver: address, amount: uint256) -> bool: nonpayable
     def transfer(receiver: address, amount: uint256) -> bool: nonpayable
 
-interface IVendorShop:
-    def is_merchant_busy() -> bool: view
 
 # ============================================================================
 # Constants & Events
@@ -90,7 +88,7 @@ tx_spending_cap: public(HashMap[uint256, uint256])
 # Config
 minimum_stake: public(uint256)
 admin: public(address)
-moderators: public(address[2])
+is_moderator: public(HashMap[address, bool])
 usdc_token: public(address)
 identity_registry: public(address)
 merchant_active: public(HashMap[uint256, bool])
@@ -135,6 +133,7 @@ def register_merchant(agent_id: uint256, tags: DynArray[String[MAX_TAG_LEN], MAX
         assert len(tag) > 0, "Empty tag not allowed"
     
     self.is_merchant[agent_id] = True
+    self.merchant_active[agent_id] = True  # ✅ ADD THIS LINE
     self.merchant_tags[agent_id] = tags
     self.tx_spending_cap[agent_id] = DEFAULT_SPENDING_CAP
     
@@ -153,6 +152,7 @@ def update_tags(agent_id: uint256, tags: DynArray[String[MAX_TAG_LEN], MAX_TAG_C
         assert len(tag) > 0, "Empty tag not allowed"
     
     self.merchant_tags[agent_id] = tags
+    self.merchant_active[agent_id] = True
     log TagsUpdated(agent_id, tags)
 
 # ============================================================================
@@ -165,6 +165,7 @@ def deposit_stake(agent_id: uint256, amount: uint256):
     assert self.owner_of[agent_id] == msg.sender, "Only owner"
     extcall ERC20(self.usdc_token).transferFrom(msg.sender, self, amount)
     self.stake[agent_id] += amount
+    self.is_merchant[agent_id] = True
     log StakeDeposited(agent_id, amount)
 
 @external
@@ -193,29 +194,14 @@ def link_shop(agent_id: uint256, shop_address: address):
 # ============================================================================
 # View Functions
 # ============================================================================
-@internal
-@view
-def _is_mod(sender: address) -> bool:
-    for mod: address in self.moderators:
-        if sender == mod:
-            return True
-        if mod == empty(address): # Optimization: stop if we hit an empty slot
-            break
-    return False
-
-@external
-def is_moderator(sender: address) -> bool: 
-    return self._is_mod(sender)
-    
-
 @external
 @view
 def can_merchant_sell(agent_id: uint256) -> bool:
     return (
-        self.is_merchant[agent_id]
-        and not self.is_banned[agent_id]
-        and self.stake[agent_id] >= self.minimum_stake
+        self.is_merchant[agent_id] 
         and self.merchant_active[agent_id]
+        and not self.is_banned[agent_id] 
+        and self.stake[agent_id] >= self.minimum_stake
     )
 
 @view
@@ -228,21 +214,14 @@ def get_tags(agent_id: uint256) -> DynArray[String[MAX_TAG_LEN], MAX_TAG_COUNT]:
 # ============================================================================
 @external
 def add_moderator(mod: address):
-    assert msg.sender == self.admin, "Only owner can add admin wallets"
-    assert mod != empty(address), "Invalid wallet address"
-    assert mod not in self.moderators, "Wallet already added"
-    for i: uint64 in range(2):
-        if self.moderators[i] == empty(address):
-            self.moderators[i] = mod
-            break
-
-    log ModeratorAdded(mod)
+    assert msg.sender == self.admin, "Admin only"
+    self.is_moderator[mod] = True
 
 
 @external
 def toggle_merchant_status(vendor_id: uint256, status: bool):
     """Admin or Moderator flips the 'Open/Closed' sign for a merchant."""
-    assert msg.sender == self.admin or self._is_mod(msg.sender), "Unauthorized"
+    assert msg.sender == self.admin or self.is_moderator[msg.sender], "Unauthorized"
     self.merchant_active[vendor_id] = status
 
 @external

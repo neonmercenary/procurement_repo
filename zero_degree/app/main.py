@@ -10,17 +10,49 @@ from fastapi.templating import Jinja2Templates
 from app.core.blockchain import init_blockchain, close_blockchain
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from app.workers.sync_worker import agent_fulfillment_worker
+from ape import Contract, networks
+
+SHOPS_INIT = open("deployed_shops.txt", "w")    # Init File
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # STARTUP
+    print("📡 Initializing Zero Degree Registry Listeners...")
     
-    await init_blockchain(app)
-     
-    yield
+    tasks = []
     
-    # SHUTDOWN
-    close_blockchain(app)
+    # Use 'a+' or check existence to prevent FileNotFoundError
+    if os.path.exists("deployed_shops.txt"):
+        with open("deployed_shops.txt", "r") as f:
+            # 1. Read ONCE
+            raw_content = f.read().strip() 
+            
+            # 2. Check the variable, not the file stream again
+            if raw_content:
+                address = raw_content
+                print(f"✅ Found Shop Address: {address}")
+                
+                with networks.parse_network_choice(settings.network_string):
+                    shop_contract = Contract(address)
+                    
+                    # 3. Create the task and ADD IT TO THE LIST
+                    # If you don't append it to 'tasks', the shutdown logic can't stop it
+                    task = asyncio.create_task(
+                        agent_fulfillment_worker(address, shop_contract.created_at_block())
+                    )
+                    tasks.append(task)
+            else:
+                print("⚠️ deployed_shops.txt is empty.")
+
+    yield  # --- APP IS RUNNING ---
+
+    print("🛑 Saving sync state and shutting down...")
+    for task in tasks:
+        task.cancel()
+    
+    print("✅ All listeners stopped.")
+
+
 
 
 app = FastAPI(lifespan=lifespan, debug=settings.debug)
@@ -66,3 +98,4 @@ async def health():
 @app.get("/snow/status")
 async def snow_status(snowgate=Depends(require_contract("snowgate"))):
     return {"active": snowgate.is_active()}
+

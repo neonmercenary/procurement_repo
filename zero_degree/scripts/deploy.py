@@ -76,18 +76,7 @@ def main():
             print(f"  Address: {registry.address}")
 
             update_env_key("ZERO_DEGREE_REGISTRY_ADDRESS", registry.address, ".env")
-
-
-            # Initialize the Registry contract
-            zd = Contract(registry.address)
-
-            # Execute the transaction
-            # Note: 'account' must be the current 'admin' of the Registry contract
-            try:
-                zd.add_moderator(settings.snowgate_address, sender=account)
-                print(f"✅ SnowGate added to Zero Degree Moderators: {settings.snowgate_address}")
-            except Exception as e:
-                print(f"❌ Failed to add moderator. Ensure 'account' is the Admin. Error: {e}")
+        
             
             deployment['contracts']['ZeroDegreeRegistry'] = {
                 'address': registry.address,

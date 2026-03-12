@@ -73,21 +73,11 @@ def index(request: Request):
     # Sometimes JS Cache can cause issues with loading the correct registry_address, USE CTRL + F5 to hard refresh if you see the wrong address in the form below
     return templates.TemplateResponse("merchant_dashboard.html", {
         "request": request,
-        "registry_address": request.app.state.mall.address if request.app.state.mall else None,
+        "registry_address": settings.zero_degree_registry_address,
         "usdc_address": settings.usdc_address,
         "erc8004_address": settings.identity_registry_address  # Assuming ERC-8004 is the identity registry for this example
     })
 
-@router.get("/add")
-def add_moderator(request: Request):
-    from ape import Contract, accounts
-    admin = accounts.load(settings.agent_alias)
-    admin.set_autosign(True, passphrase=settings.agent_pass)
-    with networks.parse_network_choice(settings.network_string):
-        c = Contract(request.app.state.mall.address)
-        c.add_moderator(settings.snowgate_address, sender=admin)
-
-    return {"status": 200, "wallet": settings.snowgate_address}
 
 
 @router.post("/api/merchant/start-worker")
@@ -127,6 +117,7 @@ async def start_worker_for_shop(req: StartWorkerRequest):
             # Start the worker
             task = asyncio.create_task(agent_fulfillment_worker(shop_address, shop_contract.created_at_block()))
             active_workers[shop_address] = task
+
             
             return JSONResponse({
                 "success": True,
@@ -173,6 +164,7 @@ async def deploy_vendor_shop(req: DeployVendorShopRequest):
                     # Use the alias or create one from address
                     short_addr = str(req.from_address)[:8]
                     deployer = accounts.load(f"merchant_{short_addr}")
+
                 except Exception as e2:
                     print(f"Failed to load merchant account: {e2}")
                     raise HTTPException(
@@ -181,9 +173,9 @@ async def deploy_vendor_shop(req: DeployVendorShopRequest):
                     )
             
             # Auto-unlock if passphrase configured
-            if settings.agent_pass:
+            if settings.vendor_pass_ape:
                 try:
-                    deployer.set_autosign(True, passphrase=settings.agent_pass)
+                    deployer.set_autosign(True, passphrase=settings.vendor_pass_ape)
                     print("Deployer unlocked with configured passphrase")
                 except Exception as e:
                     print(f"Unlock failed: {e}")
@@ -199,6 +191,7 @@ async def deploy_vendor_shop(req: DeployVendorShopRequest):
                         status_code=403,
                         detail=f"Address {req.from_address} does not own merchant ID {req.merchant_id}. Owner is {owner}."
                     )
+                
             except Exception as e:
                 if "does not own" in str(e):
                     raise
@@ -219,11 +212,15 @@ async def deploy_vendor_shop(req: DeployVendorShopRequest):
                 )
             
             print(f"Deployed to: {vendor_shop.address}")
+            with open("deployed_shops.txt", "w") as f:
+                f.write(vendor_shop.address)
+                f.close()
 
             # 2. SPAWN THE WORKER: This runs in the background of the FastAPI process
             # We use asyncio.create_task so the API doesn't wait for the worker loop
-            if vendor_shop.address not in active_workers:
-                active_workers[vendor_shop.address] = asyncio.create_task(agent_fulfillment_worker(vendor_shop.address, vendor_shop.created_at_block))
+            # if vendor_shop.address not in active_workers:
+            #     active_workers[vendor_shop.address] = 
+            asyncio.create_task(agent_fulfillment_worker(vendor_shop.address, vendor_shop.created_at_block()))
             
             return JSONResponse({
                 "success": True,
