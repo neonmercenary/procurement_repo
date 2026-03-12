@@ -26,10 +26,17 @@ We chose **Vyper** for the SnowGate core because of its proximity to Python and 
 * **SnowGate Registry:** Implements a mirrored identity system with **ERC-8004**, ensuring that only verified corporate agents can authorize spend.
 * **Stake-Back Settlement:** Merchants must maintain a minimum USDC stake to participate, creating a slashed-incentive model for fulfillment.
 
-### **The "Firewall" Logic**
 
-Unlike standard Web3 wallets, SnowGate acts as a **State-Aware Vault**. It verifies the **Temporal Validity** of a trade using block timestamps. If a vendor fails to deliver within the block-anchored window, the corporate budget is automatically unlocked and reverted.
+## 🔒 Security & Technical Specifications
 
+### **The "Programmable Firewall" Logic**
+SnowGate acts as a **State-Aware Vault**. Unlike standard wallets, it enforces **Contextual Spend Limits**:
+* **Temporal Locks:** Trade validity is anchored to block timestamps.
+* **Atomic Settlement:** Funds never leave the corporate vault until the Merchant provides cryptographic proof of fulfillment.
+* **Session Isolation:** Budget is siloed per relayer/agent, preventing single-point-of-failure treasury drains.
+
+### **Zero-Knowledge Handshake**
+The system utilizes a proprietary pass-through logic to verify settlement between the VendorShop and SnowGate. This ensures the Corporate Vault only settles orders verified by the internal state machine.
 ---
 
 ## ⚡ Technical Stack
