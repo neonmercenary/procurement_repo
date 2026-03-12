@@ -1,6 +1,6 @@
 # ❄️ Zero Degree & SnowGate: The Institutional Settlement Layer
 
-**Zero Degree** is a high-performance procurement engine bridging legacy Enterprise Resource Planning (ERP) systems with decentralized, real-world asset (RWA) settlement.
+**Zero Degree** is a high-performance procurement engine bridging legacy Enterprise Resource Planning (ERP) systems with decentralized, AUTONOMOUS settlement on Avalanche.
 
 By leveraging **SnowGate**, a programmable treasury firewall built on **Avalanche**, we eliminate the "T+32" day settlement gap, replacing manual reconciliation with **Atomic Delivery-vs-Payment (DvP)**.
 
@@ -12,7 +12,7 @@ The system operates as a **Dual-Layer Procurement Stack**:
 
 1. **The Commerce Layer (Zero Degree):** A FastAPI-based engine that intercepts Purchase Requisitions (PR) from legacy systems like SAP. It handles catalog management and merchant discovery.
 2. **The Security Layer (SnowGate):** A Vyper-native treasury firewall. It enforces on-chain spend policies, locking corporate budgets until cryptographic proof of delivery is provided.
-3. **The Agentic Worker:** An asynchronous Python monitor that bridges the gap. It watches for `ProductDelivered` events on Avalanche and triggers "Goods Receipt" (GR) updates in the ERP.
+3. **The Agentic Worker:** An asynchronous Python monitor that bridges the gap. It watches for `OrderCompleted` events on Avalanche and triggers "Goods Receipt" (GR) updates in the ERP.
 
 ---
 
@@ -28,7 +28,7 @@ We chose **Vyper** for the SnowGate core because of its proximity to Python and 
 
 ### **The "Firewall" Logic**
 
-Unlike standard Web3 wallets, SnowGate acts as a **State-Aware Vault**. It doesn't just send money; it verifies the **Temporal Validity** of a trade using block timestamps. If a vendor fails to deliver within the block-anchored window, the corporate budget is automatically unlocked and reverted.
+Unlike standard Web3 wallets, SnowGate acts as a **State-Aware Vault**. It verifies the **Temporal Validity** of a trade using block timestamps. If a vendor fails to deliver within the block-anchored window, the corporate budget is automatically unlocked and reverted.
 
 ---
 
