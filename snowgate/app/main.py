@@ -277,7 +277,7 @@ async def delivery_monitoring_worker(shop_address):
                         
                         if receipt.status == 1:
                             for event in receipt.events:
-                                if event.event_name == "ProductDelivered":
+                                if event.event_name == "OrderCompleted":
                                     args = event.event_arguments
                                     order_id = args.get("order_id")
                                     payload = args.get("payload")

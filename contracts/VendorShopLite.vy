@@ -13,6 +13,9 @@ interface IZeroDegreeRegistry:
     def ownerOf(tokenId: uint256) -> address: view
     def is_moderator(sender: address) -> bool: view
 
+interface ISnowGate:
+    def settle_session(spender: address, amount: uint256): nonpayable
+
 # --- Structs ---
 struct Product:
     price: uint256
@@ -21,11 +24,12 @@ struct Product:
     is_active: bool
 
 struct Order:
-    buyer: address
+    buyer: address         # SnowGate
+    relayer_used: address  # Internal SNOWGATE ACCOUNTING
     product_id: uint256
     price: uint256
-    is_completed: bool
     expires: uint256
+    is_completed: bool
 
 
 # General
@@ -53,6 +57,7 @@ next_order_id: public(uint256)
 # 1:1 Sale GuardRail, MVP Style
 is_order_active: public(bool)
 
+
 # --- Events ---
 event EarningsWithdrawn:
     sender: indexed(address)
@@ -72,9 +77,10 @@ event Purchased:
 event OrderCreated:
     order_id: indexed(uint256)
     buyer: indexed(address)
-    product_id: indexed(uint256)
+    relayer: indexed(address)
+    product_id: uint256
 
-event ProductDelivered:
+event OrderCompleted:
     buyer: indexed(address)     
     merchant: indexed(address)
     order_id: indexed(uint256)
@@ -132,7 +138,7 @@ def set_active(product_id: uint256, status: bool):
 #   Orders
 # ===========================
 @external
-def create_order(buyer: address, p_id: uint256, price: uint256):
+def create_order(relayer: address, p_id: uint256, price: uint256):
     """
     Create order. 'buyer' is the payer (SnowGate).
     """
@@ -144,40 +150,53 @@ def create_order(buyer: address, p_id: uint256, price: uint256):
 
     order_id: uint256 = self.next_order_id
     self.orders[order_id] = Order({
-        buyer: buyer,        # Payer = SnowGate (who we pull from)
+        buyer: msg.sender, # SnowGate
+        relayer_used: relayer,
         product_id: p_id,
         price: price,
-        is_completed: False,
-        expires: block.timestamp + 300
+        expires: block.timestamp + 3600,
+        is_completed: False
     })
+    
     self.next_order_id += 1
     self.is_order_active = True     # Lock the merchant from transacting till order done or reversals etc
-    log OrderCreated(order_id, buyer, p_id)
+    log OrderCreated(order_id, msg.sender, relayer, p_id)
 
 
-@external
+
 @nonreentrant
-def fulfill_order(order_id: uint256, encrypted_payload: String[1024]):
+@external
+def fulfill_order(order_id: uint256, spender_used: address, encrypted_payload: String[1024]):
+    """
+    Finalizes the trade. 
+    1. Pulls USDC from SnowGate Vault.
+    2. Signals SnowGate to move budget from 'Locked' to 'Settled'.
+    3. Emits delivery event with payload for the Agent.
+    """
     assert msg.sender == self.owner, "Only Merchant can fulfill"
     
     order: Order = self.orders[order_id]
     assert not order.is_completed, "Already fulfilled"
     assert block.timestamp <= order.expires, "Order expired"
 
-    # Pull from order.buyer (which is SnowGate)
+    # 1. PULL PAYMENT: VendorShop triggers the allowance granted during execute_purchase
     success: bool = extcall IERC20(self.payment_token).transferFrom(
-        order.buyer,  # SnowGate's address
+        order.buyer, # This is the SnowGate Contract address
         self, 
         order.price, 
         default_return_value=True
     )
     assert success, "Payment Collection failed"
 
-    self.orders[order_id].is_completed = True
-    
-    # self.is_order_active = False        # Free merchant
-    log ProductDelivered(order.buyer, self.owner, order_id, encrypted_payload)
+    # 2. STATE HANDSHAKE: Notify SnowGate that the 'Locked' funds are now 'Settled'
+    # This prevents the "Ghost Spending" in the SAP/ERP system.
+    extcall ISnowGate(order.buyer).settle_session(order.relayer_used, order.price)
 
+    # 3. Finalize Local State
+    self.orders[order_id].is_completed = True
+    self.is_order_active = False # Free the merchant for the next transaction
+    
+    log OrderCompleted(order.buyer, self.owner, order_id, encrypted_payload)
 
 #===========================
 # Product

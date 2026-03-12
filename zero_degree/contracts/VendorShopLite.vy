@@ -80,7 +80,7 @@ event OrderCreated:
     relayer: indexed(address)
     product_id: uint256
 
-event ProductDelivered:
+event OrderCompleted:
     buyer: indexed(address)     
     merchant: indexed(address)
     order_id: indexed(uint256)
@@ -196,7 +196,7 @@ def fulfill_order(order_id: uint256, spender_used: address, encrypted_payload: S
     self.orders[order_id].is_completed = True
     self.is_order_active = False # Free the merchant for the next transaction
     
-    log ProductDelivered(order.buyer, self.owner, order_id, encrypted_payload)
+    log OrderCompleted(order.buyer, self.owner, order_id, encrypted_payload)
 
 #===========================
 # Product

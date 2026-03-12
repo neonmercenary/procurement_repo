@@ -656,7 +656,7 @@
         if (!link) return;
 
         if (shopAddr) {
-            link.href = `/activity/?wallet=${shopAddr}`;
+            link.href = `https://testnet.snowtrace.io/address/${shopAddr}`;
             link.classList.remove('hidden');
             link.innerText = `View Activity →`;
         } else {
