@@ -41,7 +41,7 @@ The system utilizes a proprietary pass-through logic to verify settlement betwee
 
 # 📺 Project Walkthrough
 
-[![Zero Degree & SnowGate Demo](https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg)](https://www.loom.com/share/b3d4f62d46bf48e2af6c27d002454c16)
+[![Zero Degree & SnowGate Demo](https://raw.githubusercontent.com/lucas-mancini/resources/main/video-placeholder.png)](https://www.loom.com/share/b3d4f62d46bf48e2af6c27d002454c16)
 > *Click the image above to watch the 5-minute technical walkthrough.*
 
 ---
