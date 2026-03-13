@@ -6,6 +6,11 @@ By leveraging **SnowGate**, a programmable treasury firewall built on **Avalanch
 
 ---
 
+> **Project Impact:** Zero Degree transforms the $15T procurement market by replacing T+32 settlement with sub-second, atomic DvP on Avalanche. By bridging SAP to SnowGate (Vyper 0.4.0), we provide the first secure "Treasury Firewall" for autonomous corporate agents.
+
+
+---
+
 ## 🏗️ Architectural Overview
 
 The system operates as a **Dual-Layer Procurement Stack**:
