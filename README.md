@@ -37,6 +37,7 @@ SnowGate acts as a **State-Aware Vault**. Unlike standard wallets, it enforces *
 
 ### **Zero-Knowledge Handshake**
 The system utilizes a proprietary pass-through logic to verify settlement between the VendorShop and SnowGate. This ensures the Corporate Vault only settles orders verified by the internal state machine.
+
 ---
 
 # 📺 Project Walkthrough
