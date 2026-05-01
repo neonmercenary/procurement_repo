@@ -132,4 +132,4 @@ Telegram: https://t.me/theinternetgod
 
 ---
 
-### Built for the 2026 Avalanche Build Games.
+### Top 400 projects, Built for the 2026 Avalanche Build Games.
