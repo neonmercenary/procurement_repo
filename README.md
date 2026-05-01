@@ -40,8 +40,8 @@ SnowGate acts as a **State-Aware Vault**. Unlike standard wallets, it enforces *
 * **Atomic Settlement:** Funds never leave the corporate vault until the Merchant provides cryptographic proof of fulfillment.
 * **Session Isolation:** Budget is siloed per relayer/agent, preventing single-point-of-failure treasury drains.
 
-### **Zero-Knowledge Handshake**
-The system utilizes a proprietary pass-through logic to verify settlement between the VendorShop and SnowGate. This ensures the Corporate Vault only settles orders verified by the internal state machine.
+### **ZK: Zero-Knowledge Handshake**
+The system aims to utilize a proprietary pass-through logic to verify settlement between the VendorShop and SnowGate. This ensures the Corporate Vault only settles orders verified by the internal state machine.
 
 ---
 
